@@ -10,8 +10,22 @@ const api = axios.create({
 // Request interceptor for attaching JWT
 api.interceptors.request.use(
   (config) => {
+    // List of public authentication endpoints that should NOT have the Authorization header
+    const publicAuthEndpoints = [
+      '/api/auth/register',
+      '/api/auth/login',
+      '/api/auth/verify-email',
+      '/api/auth/forgot-password',
+      '/api/auth/reset-password'
+    ];
+
+    // Check if the current request URL is in the public list
+    const isPublicAuthEndpoint = publicAuthEndpoints.some(endpoint => 
+      config.url && config.url.includes(endpoint)
+    );
+
     const token = localStorage.getItem('token');
-    if (token) {
+    if (token && !isPublicAuthEndpoint) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
