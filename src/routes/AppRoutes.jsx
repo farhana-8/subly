@@ -12,6 +12,7 @@ import Login from '../pages/public/Login';
 import Register from '../pages/public/Register';
 import Plans from '../pages/public/Plans';
 import Dashboard from '../pages/user/Dashboard';
+import Payments from '../pages/user/Payments';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 
 // Route Guards
@@ -24,7 +25,10 @@ const AppRoutes = () => {
       {/* Public Routes */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Landing />} />
+        <Route path="/features" element={<Landing />} /> {/* Feature section anchor or separate page */}
+        <Route path="/pricing" element={<Plans />} />
         <Route path="/plans" element={<Plans />} />
+        <Route path="/security" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
       </Route>
@@ -39,6 +43,17 @@ const AppRoutes = () => {
         }
       >
         <Route index element={<Dashboard />} />
+      </Route>
+
+      <Route
+        path="/payments"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Payments />} />
       </Route>
 
       {/* Admin Protected Routes */}

@@ -1,39 +1,59 @@
 import React from 'react';
-import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
-import { Layout, LogOut, User, Home } from 'lucide-react';
+import { Layout, LogOut, User, Home, CreditCard } from 'lucide-react';
 
 const DashboardLayout = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
+  const navItems = [
+    { name: 'Dashboard', path: '/dashboard', icon: Home },
+    { name: 'Payments', path: '/payments', icon: CreditCard },
+    { name: 'Profile', path: '/profile', icon: User },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="min-h-screen bg-bg-deep text-main flex transition-colors duration-300">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col">
-        <div className="h-16 flex items-center px-6 border-b border-gray-200">
-          <Layout className="h-8 w-8 text-blue-600" />
-          <span className="ml-2 text-xl font-bold text-gray-900">Subly</span>
+      <aside className="w-72 bg-bg-card border-r border-main hidden md:flex flex-col">
+        <div className="h-20 flex items-center px-8 border-b border-main">
+          <div className="bg-gradient-to-br from-primary-violet to-primary-magenta p-1.5 rounded-lg mr-2">
+            <Layout className="h-6 w-6 text-white" />
+          </div>
+          <span className="text-xl font-black text-main uppercase tracking-tighter">Subly</span>
         </div>
-        <nav className="flex-grow p-4 space-y-2">
-          <Link to="/dashboard" className="flex items-center space-x-3 text-gray-700 p-2 rounded-md hover:bg-gray-100">
-            <Home className="h-5 w-5" />
-            <span>Dashboard</span>
-          </Link>
-          <Link to="/profile" className="flex items-center space-x-3 text-gray-700 p-2 rounded-md hover:bg-gray-100">
-            <User className="h-5 w-5" />
-            <span>Profile</span>
-          </Link>
+        
+        <nav className="flex-grow p-6 space-y-2">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link 
+                key={item.name}
+                to={item.path} 
+                className={`flex items-center space-x-3 p-4 rounded-2xl font-bold transition-all ${
+                  isActive 
+                    ? 'bg-primary-violet text-white shadow-lg shadow-primary-violet/20' 
+                    : 'text-muted hover:bg-main/5 hover:text-main'
+                }`}
+              >
+                <item.icon className="h-5 w-5" />
+                <span>{item.name}</span>
+              </Link>
+            );
+          })}
         </nav>
-        <div className="p-4 border-t border-gray-200">
+
+        <div className="p-6 border-t border-main">
           <button 
             onClick={handleLogout}
-            className="flex items-center space-x-3 text-red-600 p-2 w-full rounded-md hover:bg-red-50"
+            className="flex items-center space-x-3 text-red-500 p-4 w-full rounded-2xl font-bold hover:bg-red-500/10 transition-all"
           >
             <LogOut className="h-5 w-5" />
             <span>Logout</span>
@@ -42,14 +62,24 @@ const DashboardLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-grow flex flex-col">
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-          <h1 className="text-lg font-semibold text-gray-800">Welcome, {user?.name || 'User'}</h1>
-          <div className="flex items-center space-x-4 md:hidden">
-            <Layout className="h-8 w-8 text-blue-600" />
+      <div className="flex-grow flex flex-col min-h-screen overflow-hidden">
+        <header className="h-20 bg-bg-card/50 backdrop-blur-md border-b border-main flex items-center justify-between px-8 sticky top-0 z-10">
+          <h1 className="text-lg font-black text-main">
+            {navItems.find(item => item.path === location.pathname)?.name || 'Dashboard'}
+          </h1>
+          
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex flex-col items-end">
+              <span className="text-sm font-black text-main">{user?.name || user?.firstName || 'User'}</span>
+              <span className="text-[10px] font-bold text-muted uppercase tracking-widest">{user?.role || 'Member'}</span>
+            </div>
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary-violet to-primary-magenta flex items-center justify-center text-white font-black">
+              {(user?.name || user?.firstName || 'U')[0]}
+            </div>
           </div>
         </header>
-        <main className="p-6">
+        
+        <main className="p-8 flex-grow overflow-y-auto">
           <Outlet />
         </main>
       </div>
