@@ -6,7 +6,8 @@ import authService from '../../services/authService';
 
 const Register = () => {
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -27,11 +28,24 @@ const Register = () => {
       return setError('Passwords do not match');
     }
 
+    if (formData.password.length < 8) {
+      return setError('Password must be at least 8 characters long');
+    }
+
     setLoading(true);
     try {
-      await authService.register(formData);
+      // Create request object matching backend RegisterRequest DTO
+      const registerData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password
+      };
+      
+      await authService.register(registerData);
       setIsSuccess(true);
     } catch (err) {
+      console.error('Registration error:', err);
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
@@ -81,18 +95,34 @@ const Register = () => {
                   )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2 col-span-2">
-                      <label className="text-sm font-bold text-muted ml-1">Full Name</label>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-muted ml-1">First Name</label>
                       <div className="relative group">
                         <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted group-focus-within:text-primary-magenta transition-colors" />
                         <input
-                          name="name"
+                          name="firstName"
                           type="text"
                           required
-                          value={formData.name}
+                          value={formData.firstName}
                           onChange={handleChange}
                           className="w-full bg-bg-deep border border-main rounded-2xl py-3.5 pl-12 pr-4 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-magenta/50 focus:border-primary-magenta transition-all"
-                          placeholder="John Doe"
+                          placeholder="John"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-muted ml-1">Last Name</label>
+                      <div className="relative group">
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted group-focus-within:text-primary-magenta transition-colors" />
+                        <input
+                          name="lastName"
+                          type="text"
+                          required
+                          value={formData.lastName}
+                          onChange={handleChange}
+                          className="w-full bg-bg-deep border border-main rounded-2xl py-3.5 pl-12 pr-4 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-magenta/50 focus:border-primary-magenta transition-all"
+                          placeholder="Doe"
                         />
                       </div>
                     </div>

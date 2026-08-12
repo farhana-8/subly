@@ -6,9 +6,9 @@ const authService = {
     return await api.post('/api/auth/login', credentials);
   },
   
-  register: async (userData) => {
-    // userData = { name, email, password, etc }
-    return await api.post('/api/auth/register', userData);
+  register: async (registerData) => {
+    // registerData = { firstName, lastName, email, password }
+    return await api.post('/api/auth/register', registerData);
   },
 
   verifyEmail: async (token) => {
