@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg-deep: var(--bg-deep);
+  --color-bg-dark: var(--bg-dark);
+  --color-bg-card: var(--bg-card);
+  
+  --color-primary-violet: #8B5CF6;
+  --color-primary-purple: #7C3AED;
+  --color-primary-magenta: #D946EF;
+  
+  --color-accent-coral: #FB7185;
+  --color-accent-orange: #FB923C;
+  --color-accent-lime: #84CC16;
+  --color-accent-cyan: #22D3EE;
+
+  --font-sans: 'Inter', 'Manrope', 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+:root {
+  --bg-deep: #0B0B12;
+  --bg-dark: #11111B;
+  --bg-card: #171722;
+  --text-main: #FFFFFF;
+  --text-muted: #9CA3AF;
+  --border-color: rgba(255, 255, 255, 0.1);
+  
+  overscroll-behavior: none;
+}
+
+:root.light {
+  --bg-deep: #F9FAFB;
+  --bg-dark: #F3F4F6;
+  --bg-card: #FFFFFF;
+  --text-main: #111827;
+  --text-muted: #4B5563;
+  --border-color: rgba(0, 0, 0, 0.1);
+}
+
+body {
+  margin: 0;
+  overscroll-behavior: none;
+  background-color: var(--bg-deep);
+  color: var(--text-main);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html {
+  overscroll-behavior: none;
+}
+
+/* Custom Utilities for Theme-aware colors */
+.text-main { color: var(--text-main); }
+.text-muted { color: var(--text-muted); }
+.border-main { border-color: var(--border-color); }
