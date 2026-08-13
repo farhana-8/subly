@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, Calendar, CreditCard, RefreshCw, Pause, Play, XCircle, ArrowUpCircle, Clock } from 'lucide-react';
+import { Shield, Calendar, CreditCard, RefreshCw, Pause, Play, XCircle, ArrowUpCircle, Clock, Sparkles } from 'lucide-react';
 import subscriptionService from '../../services/subscriptionService';
 import { useToast } from '../../context/ToastContext';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -87,14 +87,18 @@ const Subscription = () => {
 
   if (!subscription) {
     return (
-      <div className="max-w-5xl mx-auto py-20 text-center space-y-8">
-        <div className="bg-bg-card border border-main rounded-[2.5rem] p-12 md:p-20 shadow-xl relative overflow-hidden">
+      <div className="max-w-5xl mx-auto py-20">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-bg-card border border-main rounded-[2.5rem] p-12 md:p-20 text-center shadow-xl relative overflow-hidden"
+        >
           <div className="absolute inset-0 bg-gradient-to-tr from-primary-violet/5 to-transparent"></div>
           <div className="relative z-10">
-            <Shield className="h-20 w-20 text-muted/20 mx-auto mb-6" />
-            <h3 className="text-3xl font-black text-main mb-4">No active subscription</h3>
+            <Sparkles className="h-20 w-20 text-primary-violet/20 mx-auto mb-6" />
+            <h3 className="text-3xl font-black text-main mb-4 tracking-tighter">No active subscription</h3>
             <p className="text-muted max-w-md mx-auto mb-10 text-lg">
-              Unlock the full potential of Subly. Choose a plan that fits your business needs.
+              Choose a plan to get started and unlock the full potential of Subly.
             </p>
             <Link 
               to="/plans"
@@ -104,7 +108,7 @@ const Subscription = () => {
               <ArrowUpCircle className="h-6 w-6" />
             </Link>
           </div>
-        </div>
+        </motion.div>
       </div>
     );
   }

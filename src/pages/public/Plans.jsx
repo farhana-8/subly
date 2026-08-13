@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, AlertCircle, RefreshCw, Layout, CheckCircle2, ArrowRight, ShieldAlert } from 'lucide-react';
+import { Check, AlertCircle, RefreshCw, Layout, CheckCircle2, ArrowRight, ShieldAlert, Sparkles } from 'lucide-react';
 import planService from '../../services/planService';
 import subscriptionService from '../../services/subscriptionService';
 import paymentService from '../../services/paymentService';
@@ -37,7 +37,6 @@ const Plans = () => {
         plansData = response.data.content;
       }
       
-      // Filter for active plans only if needed, though backend should handle this
       setPlans(plansData);
     } catch (err) {
       console.error('Failed to fetch plans:', err);
@@ -175,30 +174,45 @@ const Plans = () => {
         </div>
 
         {error ? (
-          <div className="max-w-xl mx-auto p-12 bg-bg-card border border-main rounded-[2.5rem] text-center shadow-xl">
-            <ShieldAlert className="h-16 w-16 text-red-500/50 mx-auto mb-6" />
-            <h3 className="text-xl font-black text-main mb-2">Service Temporarily Unavailable</h3>
-            <p className="text-muted mb-8">{error}</p>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-xl mx-auto p-12 bg-bg-card border border-main rounded-[2.5rem] text-center shadow-xl relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
+            <ShieldAlert className="h-16 w-16 text-red-500/50 mx-auto mb-6 relative z-10" />
+            <h3 className="text-xl font-black text-main mb-2 relative z-10">Service Temporarily Unavailable</h3>
+            <p className="text-muted mb-8 relative z-10">{error}</p>
             <button 
               onClick={fetchPlans}
-              className="px-8 py-4 bg-primary-violet text-white rounded-2xl font-black shadow-lg hover:bg-primary-purple transition-all flex items-center gap-2 mx-auto"
+              className="px-8 py-4 bg-primary-violet text-white rounded-2xl font-black shadow-lg hover:bg-primary-purple transition-all flex items-center gap-2 mx-auto relative z-10"
             >
               <RefreshCw className="h-5 w-5" />
               Try Again
             </button>
-          </div>
+          </motion.div>
         ) : plans.length === 0 ? (
-          <div className="max-w-xl mx-auto p-12 bg-bg-card border border-main rounded-[2.5rem] text-center shadow-xl">
-            <Layout className="h-16 w-16 text-muted/30 mx-auto mb-6" />
-            <h3 className="text-xl font-black text-main mb-2">No active plans available</h3>
-            <p className="text-muted mb-8">We are currently updating our subscription tiers. Please check back later.</p>
-            <button 
-              onClick={() => navigate('/')}
-              className="px-8 py-4 bg-bg-deep border border-main text-main rounded-2xl font-black hover:bg-main/5 transition-all"
-            >
-              Back to Home
-            </button>
-          </div>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-2xl mx-auto p-12 md:p-20 bg-bg-card border border-main rounded-[2.5rem] text-center shadow-xl relative overflow-hidden"
+          >
+            <div className="absolute top-0 left-0 w-64 h-64 bg-primary-violet/5 rounded-full blur-[80px] -ml-32 -mt-32"></div>
+            <div className="relative z-10">
+              <Sparkles className="h-20 w-20 text-primary-violet/30 mx-auto mb-6" />
+              <h3 className="text-3xl font-black text-main mb-4 tracking-tighter">No plans available right now</h3>
+              <p className="text-muted mb-10 text-lg leading-relaxed">
+                Subscription plans will appear here once they are available. <br className="hidden md:block" />
+                We are currently refining our offerings to serve you better.
+              </p>
+              <button 
+                onClick={() => navigate('/')}
+                className="px-10 py-5 bg-bg-deep border border-main text-main rounded-2xl font-black text-lg hover:bg-main/5 transition-all shadow-lg"
+              >
+                Back to Home
+              </button>
+            </div>
+          </motion.div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {plans.map((plan) => (

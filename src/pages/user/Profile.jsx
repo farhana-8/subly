@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { User, Mail, Shield, Save, Key, Loader2, Camera, ArrowUpCircle } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { User, Mail, Shield, Save, Key, Loader2, Camera, ArrowUpCircle, AlertCircle, RefreshCw, ArrowLeft } from 'lucide-react';
 import userService from '../../services/userService';
 import { useToast } from '../../context/ToastContext';
 import useAuth from '../../hooks/useAuth';
@@ -10,7 +10,9 @@ const Profile = () => {
   const { user, updateUserInfo } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
   const { addToast } = useToast();
+  const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
     firstName: '',
@@ -18,29 +20,35 @@ const Profile = () => {
     email: '',
   });
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        setLoading(true);
-        const response = await userService.getCurrentUser();
-        // Robust parsing for different backend response structures
-        const data = response.data?.data || response.data;
-        
-        if (data) {
-          setFormData({
-            firstName: data.firstName || '',
-            lastName: data.lastName || '',
-            email: data.email || '',
-          });
-        }
-      } catch (error) {
-        console.error('Failed to fetch profile:', error);
-        addToast('Failed to load profile details', 'error');
-      } finally {
-        setLoading(false);
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await userService.getCurrentUser();
+      // Robust parsing for different backend response structures
+      const data = response.data?.data || response.data;
+      
+      if (data) {
+        setFormData({
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
+          email: data.email || '',
+        });
       }
-    };
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+      if (error.response?.status === 401) {
+        setError('Your account could not be authenticated with the server. This may be due to a temporary backend issue.');
+      } else {
+        setError(error.response?.data?.message || 'Unable to load your profile at this time.');
+      }
+      addToast('Failed to load profile details', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchProfile();
   }, []);
 
@@ -69,6 +77,43 @@ const Profile = () => {
       <div className="max-w-4xl mx-auto space-y-8 animate-pulse">
         <div className="h-10 w-48 bg-main/5 rounded-xl"></div>
         <div className="h-96 bg-bg-card border border-main rounded-[2.5rem]"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto py-20">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-bg-card border border-main rounded-[2.5rem] p-12 md:p-20 text-center shadow-xl relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/5 rounded-full blur-[80px] -mr-32 -mt-32"></div>
+          <div className="relative z-10">
+            <AlertCircle className="h-20 w-20 text-red-500/50 mx-auto mb-6" />
+            <h3 className="text-3xl font-black text-main mb-4 tracking-tighter">Unable to load your profile</h3>
+            <p className="text-muted max-w-md mx-auto mb-10 text-lg">
+              {error}
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button 
+                onClick={fetchProfile}
+                className="w-full sm:w-auto px-10 py-5 bg-primary-violet text-white rounded-2xl font-black text-lg shadow-2xl shadow-primary-violet/20 hover:bg-primary-purple transition-all flex items-center justify-center gap-2"
+              >
+                <RefreshCw className="h-6 w-6" />
+                Retry
+              </button>
+              <button 
+                onClick={() => navigate('/dashboard')}
+                className="w-full sm:w-auto px-10 py-5 bg-bg-deep border border-main text-main rounded-2xl font-black text-lg hover:bg-main/5 transition-all flex items-center justify-center gap-2"
+              >
+                <ArrowLeft className="h-6 w-6" />
+                Back to Dashboard
+              </button>
+            </div>
+          </div>
+        </motion.div>
       </div>
     );
   }
