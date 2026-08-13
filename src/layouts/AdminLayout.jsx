@@ -1,43 +1,67 @@
 import React from 'react';
-import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
-import { Shield, LogOut, Users, Settings, Layout } from 'lucide-react';
+import { Shield, LogOut, Users, Settings, Layout, CreditCard, BarChart3, Home } from 'lucide-react';
 
 const AdminLayout = () => {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
+  const navItems = [
+    { name: 'Overview', path: '/admin/dashboard', icon: Layout },
+    { name: 'Users', path: '/admin/users', icon: Users },
+    { name: 'Plans', path: '/admin/plans', icon: Settings },
+    { name: 'Payments', path: '/admin/payments', icon: CreditCard },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex">
+    <div className="min-h-screen bg-bg-deep text-main flex transition-colors duration-300">
       {/* Sidebar */}
-      <aside className="w-64 bg-gray-800 border-r border-gray-700 hidden md:flex flex-col">
-        <div className="h-16 flex items-center px-6 border-b border-gray-700">
-          <Shield className="h-8 w-8 text-blue-400" />
-          <span className="ml-2 text-xl font-bold">Subly Admin</span>
+      <aside className="w-72 bg-bg-card border-r border-main hidden md:flex flex-col">
+        <div className="h-20 flex items-center px-8 border-b border-main">
+          <div className="bg-gradient-to-br from-primary-violet to-primary-magenta p-1.5 rounded-lg mr-2">
+            <Shield className="h-6 w-6 text-white" />
+          </div>
+          <span className="text-xl font-black text-main uppercase tracking-tighter">Subly Admin</span>
         </div>
-        <nav className="flex-grow p-4 space-y-2">
-          <Link to="/admin/dashboard" className="flex items-center space-x-3 text-gray-300 p-2 rounded-md hover:bg-gray-700">
-            <Layout className="h-5 w-5" />
-            <span>Overview</span>
-          </Link>
-          <Link to="/admin/users" className="flex items-center space-x-3 text-gray-300 p-2 rounded-md hover:bg-gray-700">
-            <Users className="h-5 w-5" />
-            <span>Manage Users</span>
-          </Link>
-          <Link to="/admin/settings" className="flex items-center space-x-3 text-gray-300 p-2 rounded-md hover:bg-gray-700">
-            <Settings className="h-5 w-5" />
-            <span>System Settings</span>
-          </Link>
+        
+        <nav className="flex-grow p-6 space-y-2">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link 
+                key={item.name}
+                to={item.path} 
+                className={`flex items-center space-x-3 p-4 rounded-2xl font-bold transition-all ${
+                  isActive 
+                    ? 'bg-primary-violet text-white shadow-lg shadow-primary-violet/20' 
+                    : 'text-muted hover:bg-main/5 hover:text-main'
+                }`}
+              >
+                <item.icon className="h-5 w-5" />
+                <span>{item.name}</span>
+              </Link>
+            );
+          })}
         </nav>
-        <div className="p-4 border-t border-gray-700">
+
+        <div className="p-6 border-t border-main space-y-2">
+          <Link 
+            to="/dashboard"
+            className="flex items-center space-x-3 text-muted p-4 w-full rounded-2xl font-bold hover:bg-main/5 hover:text-main transition-all"
+          >
+            <Home className="h-5 w-5" />
+            <span>User View</span>
+          </Link>
           <button 
             onClick={handleLogout}
-            className="flex items-center space-x-3 text-red-400 p-2 w-full rounded-md hover:bg-red-900/20"
+            className="flex items-center space-x-3 text-red-500 p-4 w-full rounded-2xl font-bold hover:bg-red-500/10 transition-all"
           >
             <LogOut className="h-5 w-5" />
             <span>Logout</span>
@@ -46,11 +70,24 @@ const AdminLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-grow flex flex-col bg-gray-900">
-        <header className="h-16 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-6">
-          <h1 className="text-lg font-semibold">Admin Panel</h1>
+      <div className="flex-grow flex flex-col min-h-screen overflow-hidden">
+        <header className="h-20 bg-bg-card/50 backdrop-blur-md border-b border-main flex items-center justify-between px-8 sticky top-0 z-10">
+          <h1 className="text-lg font-black text-main">
+            {navItems.find(item => item.path === location.pathname)?.name || 'Admin Panel'}
+          </h1>
+          
+          <div className="flex items-center gap-6">
+            <div className="hidden sm:flex flex-col items-end">
+              <span className="text-sm font-black text-main">{user?.name || user?.firstName || 'Admin'}</span>
+              <span className="text-[10px] font-bold text-primary-violet uppercase tracking-widest">System Administrator</span>
+            </div>
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary-violet to-primary-magenta flex items-center justify-center text-white font-black">
+              {(user?.name || user?.firstName || 'A')[0]}
+            </div>
+          </div>
         </header>
-        <main className="p-6 overflow-auto">
+        
+        <main className="p-8 flex-grow overflow-y-auto">
           <Outlet />
         </main>
       </div>

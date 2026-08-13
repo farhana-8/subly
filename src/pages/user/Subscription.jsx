@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Calendar, CreditCard, RefreshCw, Pause, Play, XCircle, ArrowUpCircle } from 'lucide-react';
+import { Shield, Calendar, CreditCard, RefreshCw, Pause, Play, XCircle, ArrowUpCircle, Clock } from 'lucide-react';
 import subscriptionService from '../../services/subscriptionService';
 import { useToast } from '../../context/ToastContext';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -14,11 +14,18 @@ const Subscription = () => {
 
   const fetchSubscription = async () => {
     try {
+      setLoading(true);
       const response = await subscriptionService.getCurrentSubscription();
-      setSubscription(response.data);
+      // Handle cases where data might be nested or direct
+      const data = response.data?.data || response.data;
+      setSubscription(data || null);
     } catch (error) {
       console.error('Failed to fetch subscription:', error);
-      addToast('Failed to load subscription details', 'error');
+      // Only show error if it's not a 404 (which might mean no subscription)
+      if (error.response?.status !== 404) {
+        addToast('Failed to load subscription details', 'error');
+      }
+      setSubscription(null);
     } finally {
       setLoading(false);
     }
@@ -70,27 +77,35 @@ const Subscription = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6 animate-pulse">
-        <div className="h-10 w-48 bg-main/5 rounded-lg"></div>
-        <div className="h-64 bg-bg-card border border-main rounded-[2rem]"></div>
+      <div className="max-w-5xl mx-auto space-y-8">
+        <div className="h-10 w-64 bg-main/5 rounded-xl animate-pulse"></div>
+        <div className="h-64 bg-bg-card border border-main rounded-[2.5rem] animate-pulse"></div>
       </div>
     );
   }
 
   if (!subscription) {
     return (
-      <div className="bg-bg-card border border-main rounded-[2rem] p-20 text-center shadow-xl">
-        <Shield className="h-16 w-16 text-muted opacity-20 mx-auto mb-6" />
-        <h3 className="text-xl font-black text-main mb-2">No active subscription</h3>
-        <p className="text-muted mb-8">Subscribe to a plan to unlock all features.</p>
-        <motion.a 
-          href="/plans"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="inline-flex items-center gap-2 px-8 py-4 bg-primary-violet text-white rounded-2xl font-black shadow-lg shadow-primary-violet/20"
-        >
-          View Plans
-        </motion.a>
+      <div className="max-w-5xl mx-auto py-20 text-center space-y-8">
+        <div className="bg-bg-card border border-main rounded-[2.5rem] p-12 md:p-20 shadow-xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-tr from-primary-violet/5 to-transparent"></div>
+          <div className="relative z-10">
+            <Shield className="h-20 w-20 text-muted/20 mx-auto mb-6" />
+            <h3 className="text-3xl font-black text-main mb-4">No active subscription</h3>
+            <p className="text-muted max-w-md mx-auto mb-10 text-lg">
+              Unlock the full potential of Subly. Choose a plan that fits your business needs.
+            </p>
+            <motion.a 
+              href="/plans"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="inline-flex items-center gap-3 px-10 py-5 bg-primary-violet text-white rounded-2xl font-black text-lg shadow-2xl shadow-primary-violet/20 hover:bg-primary-purple transition-all"
+            >
+              Explore Plans
+              <ArrowUpCircle className="h-6 w-6" />
+            </motion.a>
+          </div>
+        </div>
       </div>
     );
   }
@@ -154,7 +169,7 @@ const Subscription = () => {
                     <span className="text-[10px] font-black uppercase tracking-wider">Started</span>
                   </div>
                   <div className="text-main font-bold">
-                    {new Date(subscription.startDate).toLocaleDateString()}
+                    {subscription.startDate ? new Date(subscription.startDate).toLocaleDateString() : 'N/A'}
                   </div>
                 </div>
                 <div>
@@ -263,12 +278,12 @@ const Subscription = () => {
                   <Clock className="h-5 w-5 text-muted" />
                 </div>
                 <div>
-                  <div className="text-sm font-bold text-main">Last Payment</div>
-                  <div className="text-xs text-muted">Success • {new Date(subscription.updatedAt).toLocaleDateString()}</div>
+                  <div className="text-sm font-bold text-main">Last Updated</div>
+                  <div className="text-xs text-muted">{subscription.updatedAt ? new Date(subscription.updatedAt).toLocaleDateString() : 'N/A'}</div>
                 </div>
               </div>
               <button 
-                onClick={() => window.location.href = '/subscription/history'}
+                onClick={() => window.location.href = '/payments'}
                 className="w-full py-3 bg-main/5 hover:bg-main/10 text-main rounded-xl font-bold transition-all text-sm border border-main/10"
               >
                 View Full History

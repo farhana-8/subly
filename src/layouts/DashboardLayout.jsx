@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
-import { Layout, LogOut, User, Home, CreditCard, Bell, Shield } from 'lucide-react';
+import { Layout, LogOut, User, Home, CreditCard, Bell, Shield, Settings } from 'lucide-react';
 
 const DashboardLayout = () => {
   const { user, logout } = useAuth();
@@ -13,13 +13,19 @@ const DashboardLayout = () => {
     navigate('/login');
   };
 
+  const isAdmin = user?.role === 'ADMIN' || user?.roles?.includes('ADMIN');
+
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: Home },
     { name: 'Subscription', path: '/subscription', icon: Shield },
     { name: 'Payments', path: '/payments', icon: CreditCard },
     { name: 'Notifications', path: '/notifications', icon: Bell },
-    { name: 'Profile', path: '/profile', icon: User },
   ];
+
+  // Add Admin Dashboard link if user is admin
+  if (isAdmin) {
+    navItems.push({ name: 'Admin Panel', path: '/admin/dashboard', icon: Settings });
+  }
 
   return (
     <div className="min-h-screen bg-bg-deep text-main flex transition-colors duration-300">
@@ -52,7 +58,14 @@ const DashboardLayout = () => {
           })}
         </nav>
 
-        <div className="p-6 border-t border-main">
+        <div className="p-6 border-t border-main space-y-2">
+          <Link 
+            to="/dashboard" // Temporarily pointing to dashboard or a real profile page if created
+            className={`flex items-center space-x-3 p-4 rounded-2xl font-bold transition-all text-muted hover:bg-main/5 hover:text-main`}
+          >
+            <User className="h-5 w-5" />
+            <span>Profile</span>
+          </Link>
           <button 
             onClick={handleLogout}
             className="flex items-center space-x-3 text-red-500 p-4 w-full rounded-2xl font-bold hover:bg-red-500/10 transition-all"

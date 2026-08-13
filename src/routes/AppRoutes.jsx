@@ -17,6 +17,9 @@ import Payments from '../pages/user/Payments';
 import Subscription from '../pages/user/Subscription';
 import Notifications from '../pages/user/Notifications';
 import AdminDashboard from '../pages/admin/AdminDashboard';
+import AdminUsers from '../pages/admin/AdminUsers';
+import AdminPlans from '../pages/admin/AdminPlans';
+import AdminPayments from '../pages/admin/AdminPayments';
 
 // Route Guards
 import ProtectedRoute from './ProtectedRoute';
@@ -28,7 +31,7 @@ const AppRoutes = () => {
       {/* Public Routes */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Landing />} />
-        <Route path="/features" element={<Landing />} /> {/* Feature section anchor or separate page */}
+        <Route path="/features" element={<Landing />} />
         <Route path="/pricing" element={<Plans />} />
         <Route path="/plans" element={<Plans />} />
         <Route path="/security" element={<Landing />} />
@@ -58,7 +61,7 @@ const AppRoutes = () => {
         }
       >
         <Route index element={<Subscription />} />
-        <Route path="history" element={<Payments />} /> {/* Reusing Payments for now as history */}
+        <Route path="history" element={<Payments />} />
       </Route>
 
       <Route
@@ -94,6 +97,9 @@ const AppRoutes = () => {
       >
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="plans" element={<AdminPlans />} />
+        <Route path="payments" element={<AdminPayments />} />
       </Route>
 
       {/* Fallback */}
