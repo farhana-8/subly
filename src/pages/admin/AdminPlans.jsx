@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Zap, Plus, Edit2, Trash2, CheckCircle2, XCircle, DollarSign, Clock } from 'lucide-react';
+import { Zap, Plus, Edit2, Trash2, CheckCircle2, XCircle, DollarSign, Clock, RefreshCw } from 'lucide-react';
 import adminService from '../../services/adminService';
 import { useToast } from '../../context/ToastContext';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -27,7 +27,9 @@ const AdminPlans = () => {
     try {
       setLoading(true);
       const response = await adminService.getAllPlans();
-      setPlans(Array.isArray(response.data) ? response.data : []);
+      // Robust parsing for admin plans list
+      const data = response.data?.data || response.data || [];
+      setPlans(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch plans:', error);
       addToast('Failed to load plans', 'error');
@@ -104,22 +106,30 @@ const AdminPlans = () => {
           <p className="text-muted mt-1">Configure your subscription tiers.</p>
         </div>
         
-        <button 
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 px-6 py-3 bg-primary-violet text-white rounded-2xl font-black shadow-lg shadow-primary-violet/20 hover:scale-105 transition-all"
-        >
-          <Plus className="h-5 w-5" />
-          Create New Plan
-        </button>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={fetchPlans}
+            className="p-3 bg-bg-card border border-main rounded-2xl text-muted hover:text-main transition-all"
+          >
+            <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <button 
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 px-6 py-3 bg-primary-violet text-white rounded-2xl font-black shadow-lg shadow-primary-violet/20 hover:scale-105 transition-all"
+          >
+            <Plus className="h-5 w-5" />
+            Create New Plan
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {loading ? (
+        {loading && plans.length === 0 ? (
           [1, 2, 3].map(i => (
             <div key={i} className="h-64 bg-bg-card border border-main rounded-[2.5rem] animate-pulse"></div>
           ))
         ) : plans.length === 0 ? (
-          <div className="col-span-full p-20 text-center bg-bg-card border border-main rounded-[2.5rem]">
+          <div className="col-span-full p-20 text-center bg-bg-card border border-main rounded-[2.5rem] shadow-xl">
             <Zap className="h-16 w-16 text-muted/20 mx-auto mb-6" />
             <h3 className="text-xl font-black text-main mb-2">No plans configured</h3>
             <p className="text-muted">Start by creating your first subscription tier.</p>
@@ -131,7 +141,7 @@ const AdminPlans = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.1 }}
-              className="bg-bg-card border border-main rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden group"
+              className="bg-bg-card border border-main rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden group hover:border-primary-violet/30 transition-all"
             >
               <div className="flex justify-between items-start mb-6">
                 <div className={`px-3 py-1 rounded-full text-[10px] font-black border uppercase tracking-widest ${
@@ -150,11 +160,11 @@ const AdminPlans = () => {
               </div>
 
               <h3 className="text-2xl font-black text-main mb-2">{plan.name}</h3>
-              <p className="text-muted text-sm font-medium mb-8 line-clamp-2">{plan.description}</p>
+              <p className="text-muted text-sm font-medium mb-8 line-clamp-2">{plan.description || 'No description provided.'}</p>
 
               <div className="flex items-baseline gap-2 mb-8">
                 <span className="text-4xl font-black text-main">{plan.currency === 'INR' ? '₹' : '$'}{plan.price}</span>
-                <span className="text-xs font-bold text-muted uppercase tracking-widest">/ {plan.billingInterval.toLowerCase()}</span>
+                <span className="text-xs font-bold text-muted uppercase tracking-widest">/ {plan.billingInterval?.toLowerCase() || 'monthly'}</span>
               </div>
 
               <div className="pt-6 border-t border-main/10 flex justify-between items-center">
@@ -186,7 +196,7 @@ const AdminPlans = () => {
               required
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
-              className="w-full px-4 py-3 bg-bg-deep border border-main rounded-xl text-main focus:outline-none focus:border-primary-violet"
+              className="w-full px-4 py-3 bg-bg-deep border border-main rounded-xl text-main focus:outline-none focus:border-primary-violet transition-all"
               placeholder="e.g. Pro Monthly"
             />
           </div>
@@ -196,7 +206,7 @@ const AdminPlans = () => {
               required
               value={formData.description}
               onChange={(e) => setFormData({...formData, description: e.target.value})}
-              className="w-full px-4 py-3 bg-bg-deep border border-main rounded-xl text-main focus:outline-none focus:border-primary-violet h-24 resize-none"
+              className="w-full px-4 py-3 bg-bg-deep border border-main rounded-xl text-main focus:outline-none focus:border-primary-violet h-24 resize-none transition-all"
               placeholder="What's included in this plan?"
             />
           </div>
@@ -208,7 +218,7 @@ const AdminPlans = () => {
                 required
                 value={formData.price}
                 onChange={(e) => setFormData({...formData, price: e.target.value})}
-                className="w-full px-4 py-3 bg-bg-deep border border-main rounded-xl text-main focus:outline-none focus:border-primary-violet"
+                className="w-full px-4 py-3 bg-bg-deep border border-main rounded-xl text-main focus:outline-none focus:border-primary-violet transition-all"
                 placeholder="0.00"
               />
             </div>
@@ -217,7 +227,7 @@ const AdminPlans = () => {
               <select 
                 value={formData.billingInterval}
                 onChange={(e) => setFormData({...formData, billingInterval: e.target.value})}
-                className="w-full px-4 py-3 bg-bg-deep border border-main rounded-xl text-main focus:outline-none focus:border-primary-violet"
+                className="w-full px-4 py-3 bg-bg-deep border border-main rounded-xl text-main focus:outline-none focus:border-primary-violet transition-all"
               >
                 <option value="MONTHLY">Monthly</option>
                 <option value="YEARLY">Yearly</option>

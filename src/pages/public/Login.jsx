@@ -21,9 +21,20 @@ const Login = () => {
     setLoading(true);
 
     try {
-      await login({ email, password });
-      const from = location.state?.from?.pathname || '/dashboard';
-      navigate(from, { replace: true });
+      const data = await login({ email, password });
+      
+      // Extract user role from response
+      const user = data.user || data.data?.user;
+      const isAdmin = user?.role === 'ADMIN' || user?.roles?.includes('ADMIN');
+      
+      // Determine redirection target
+      let target = location.state?.from?.pathname;
+      
+      if (!target || target === '/') {
+        target = isAdmin ? '/admin/dashboard' : '/dashboard';
+      }
+      
+      navigate(target, { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid email or password. Please try again.');
     } finally {

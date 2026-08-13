@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CreditCard, Search, RotateCcw, CheckCircle2, XCircle, Clock, ExternalLink } from 'lucide-react';
+import { CreditCard, Search, RotateCcw, CheckCircle2, XCircle, Clock, ExternalLink, RefreshCw } from 'lucide-react';
 import adminService from '../../services/adminService';
 import { useToast } from '../../context/ToastContext';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -18,7 +18,9 @@ const AdminPayments = () => {
     try {
       setLoading(true);
       const response = await adminService.getAllPayments();
-      setPayments(Array.isArray(response.data) ? response.data : []);
+      // Robust parsing for admin payments list
+      const data = response.data?.data || response.data || [];
+      setPayments(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch payments:', error);
       addToast('Failed to load payments list', 'error');
@@ -71,20 +73,28 @@ const AdminPayments = () => {
           <p className="text-muted mt-1">Monitor all system transactions.</p>
         </div>
         
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
-          <input 
-            type="text"
-            placeholder="Search by ID, name, or email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-bg-card border border-main rounded-2xl text-main focus:outline-none focus:border-primary-violet transition-all"
-          />
+        <div className="flex items-center gap-3">
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
+            <input 
+              type="text"
+              placeholder="Search by ID, name, or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-bg-card border border-main rounded-2xl text-main focus:outline-none focus:border-primary-violet transition-all shadow-sm"
+            />
+          </div>
+          <button 
+            onClick={fetchPayments}
+            className="p-3 bg-bg-card border border-main rounded-2xl text-muted hover:text-main transition-all"
+          >
+            <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </div>
 
       <div className="bg-bg-card border border-main rounded-[2.5rem] overflow-hidden shadow-xl">
-        {loading ? (
+        {loading && payments.length === 0 ? (
           <div className="p-20 text-center">
             <div className="animate-spin h-10 w-10 border-4 border-primary-violet border-t-transparent rounded-full mx-auto mb-4"></div>
             <p className="text-muted font-bold">Loading payments...</p>
@@ -119,14 +129,14 @@ const AdminPayments = () => {
                   >
                     <td className="px-8 py-6">
                       <div className="text-main font-black flex items-center gap-2">
-                        {payment.gatewayPaymentId || 'N/A'}
+                        {payment.gatewayPaymentId || payment.transactionId || 'N/A'}
                         <ExternalLink className="h-3 w-3 text-muted opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" />
                       </div>
-                      <div className="text-[10px] text-muted font-bold uppercase tracking-wider">{payment.paymentMethod}</div>
+                      <div className="text-[10px] text-muted font-bold uppercase tracking-wider">{payment.paymentMethod || 'RAZORPAY'}</div>
                     </td>
                     <td className="px-8 py-6">
                       <div className="text-main font-bold">{payment.userName || 'Unknown'}</div>
-                      <div className="text-xs text-muted">{payment.userEmail}</div>
+                      <div className="text-xs text-muted font-medium">{payment.userEmail || 'N/A'}</div>
                     </td>
                     <td className="px-8 py-6 text-right">
                       <div className="text-main font-black">{payment.currency === 'INR' ? '₹' : '$'}{payment.amount}</div>
@@ -141,13 +151,13 @@ const AdminPayments = () => {
                       </div>
                     </td>
                     <td className="px-8 py-6 text-sm font-bold text-muted">
-                      {new Date(payment.createdAt).toLocaleDateString()}
+                      {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : 'N/A'}
                     </td>
                     <td className="px-8 py-6 text-right">
                       {(payment.status === 'SUCCESS' || payment.status === 'CAPTURED') && (
                         <button 
                           onClick={() => setConfirmRefund({ open: true, id: payment.id })}
-                          className="p-2 bg-bg-deep border border-main rounded-xl text-muted hover:text-primary-violet transition-all group/btn"
+                          className="p-2 bg-bg-deep border border-main rounded-xl text-muted hover:text-primary-violet transition-all group/btn shadow-sm"
                           title="Refund Payment"
                         >
                           <RotateCcw className="h-4 w-4 group-hover/btn:rotate-[-45deg] transition-transform" />

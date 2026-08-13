@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Shield, Calendar, CreditCard, RefreshCw, Pause, Play, XCircle, ArrowUpCircle, Clock } from 'lucide-react';
 import subscriptionService from '../../services/subscriptionService';
@@ -77,9 +78,9 @@ const Subscription = () => {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto space-y-8">
-        <div className="h-10 w-64 bg-main/5 rounded-xl animate-pulse"></div>
-        <div className="h-64 bg-bg-card border border-main rounded-[2.5rem] animate-pulse"></div>
+      <div className="max-w-5xl mx-auto space-y-8 animate-pulse">
+        <div className="h-10 w-64 bg-main/5 rounded-xl"></div>
+        <div className="h-64 bg-bg-card border border-main rounded-[2.5rem]"></div>
       </div>
     );
   }
@@ -95,15 +96,13 @@ const Subscription = () => {
             <p className="text-muted max-w-md mx-auto mb-10 text-lg">
               Unlock the full potential of Subly. Choose a plan that fits your business needs.
             </p>
-            <motion.a 
-              href="/plans"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <Link 
+              to="/plans"
               className="inline-flex items-center gap-3 px-10 py-5 bg-primary-violet text-white rounded-2xl font-black text-lg shadow-2xl shadow-primary-violet/20 hover:bg-primary-purple transition-all"
             >
               Explore Plans
               <ArrowUpCircle className="h-6 w-6" />
-            </motion.a>
+            </Link>
           </div>
         </div>
       </div>
@@ -219,7 +218,7 @@ const Subscription = () => {
               {subscription.status === 'PAUSED' && (
                 <button 
                   onClick={() => openConfirm('resume')}
-                  className="flex items-center justify-between p-6 bg-accent-lime/5 border border-accent-lime/20 rounded-2xl group hover:bg-accent-lime/10 transition-all"
+                  className="flex items-center justify-between p-6 bg-accent-lime/5 border border-lime/20 rounded-2xl group hover:bg-accent-lime/10 transition-all"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-accent-lime/10 rounded-xl flex items-center justify-center">
@@ -233,8 +232,8 @@ const Subscription = () => {
                 </button>
               )}
 
-              <button 
-                onClick={() => window.location.href = '/plans'}
+              <Link 
+                to="/plans"
                 className="flex items-center justify-between p-6 bg-primary-violet/5 border border-primary-violet/20 rounded-2xl group hover:bg-primary-violet/10 transition-all"
               >
                 <div className="flex items-center gap-4">
@@ -246,7 +245,7 @@ const Subscription = () => {
                     <div className="text-xs text-muted">Switch to a higher tier</div>
                   </div>
                 </div>
-              </button>
+              </Link>
 
               {subscription.status !== 'CANCELLED' && (
                 <button 
@@ -282,12 +281,12 @@ const Subscription = () => {
                   <div className="text-xs text-muted">{subscription.updatedAt ? new Date(subscription.updatedAt).toLocaleDateString() : 'N/A'}</div>
                 </div>
               </div>
-              <button 
-                onClick={() => window.location.href = '/payments'}
-                className="w-full py-3 bg-main/5 hover:bg-main/10 text-main rounded-xl font-bold transition-all text-sm border border-main/10"
+              <Link 
+                to="/payments"
+                className="w-full py-3 bg-main/5 hover:bg-main/10 text-main rounded-xl font-bold transition-all text-sm border border-main/10 text-center block"
               >
                 View Full History
-              </button>
+              </Link>
             </div>
           </div>
         </div>

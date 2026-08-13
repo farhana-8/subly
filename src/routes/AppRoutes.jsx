@@ -11,6 +11,8 @@ import Landing from '../pages/public/Landing';
 import Login from '../pages/public/Login';
 import Register from '../pages/public/Register';
 import VerifyEmail from '../pages/public/VerifyEmail';
+import ForgotPassword from '../pages/public/ForgotPassword';
+import ResetPassword from '../pages/public/ResetPassword';
 import Plans from '../pages/public/Plans';
 import Dashboard from '../pages/user/Dashboard';
 import Payments from '../pages/user/Payments';
@@ -39,63 +41,24 @@ const AppRoutes = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Route>
 
       {/* User Protected Routes */}
       <Route
-        path="/dashboard"
         element={
           <ProtectedRoute>
             <DashboardLayout />
           </ProtectedRoute>
         }
       >
-        <Route index element={<Dashboard />} />
-      </Route>
-
-      <Route
-        path="/subscription"
-        element={
-          <ProtectedRoute>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Subscription />} />
-        <Route path="history" element={<Payments />} />
-      </Route>
-
-      <Route
-        path="/payments"
-        element={
-          <ProtectedRoute>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Payments />} />
-      </Route>
-
-      <Route
-        path="/notifications"
-        element={
-          <ProtectedRoute>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Notifications />} />
-      </Route>
-
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Profile />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/subscription" element={<Subscription />} />
+        <Route path="/subscription/history" element={<Payments />} />
+        <Route path="/payments" element={<Payments />} />
+        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/profile" element={<Profile />} />
       </Route>
 
       {/* Admin Protected Routes */}

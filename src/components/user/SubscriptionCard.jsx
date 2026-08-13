@@ -1,8 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Zap, Calendar, CreditCard, RefreshCw, Pause, Play, XCircle } from 'lucide-react';
 
 const SubscriptionCard = ({ subscription, onAction }) => {
+  const navigate = useNavigate();
+
   if (!subscription) {
     return (
       <div className="bg-bg-card border border-main rounded-[2rem] p-8 text-center shadow-xl">
@@ -12,7 +15,7 @@ const SubscriptionCard = ({ subscription, onAction }) => {
         <h3 className="text-xl font-black text-main mb-2">No Active Subscription</h3>
         <p className="text-muted mb-8">You don't have an active plan. Subscribe now to unlock all features.</p>
         <button 
-          onClick={() => window.location.href = '/plans'}
+          onClick={() => navigate('/plans')}
           className="px-8 py-3 bg-primary-violet text-white rounded-full font-bold hover:bg-primary-purple transition-all shadow-lg shadow-primary-violet/20"
         >
           Explore Plans
@@ -46,13 +49,13 @@ const SubscriptionCard = ({ subscription, onAction }) => {
           </div>
           <p className="text-muted text-sm font-medium flex items-center gap-2">
             <Calendar className="h-4 w-4" />
-            Started on {new Date(startDate).toLocaleDateString()}
+            Started on {startDate ? new Date(startDate).toLocaleDateString() : 'N/A'}
           </p>
         </div>
         <div className="text-left md:text-right">
           <div className="text-3xl font-black text-main mb-1">
-            {currency === 'INR' ? '₹' : '$'}{price || '99'}
-            <span className="text-sm text-muted font-bold">/{interval || 'month'}</span>
+            {currency === 'INR' ? '₹' : '$'}{price || plan?.price || '0'}
+            <span className="text-sm text-muted font-bold">/{interval || plan?.billingInterval?.toLowerCase() || 'month'}</span>
           </div>
           <p className="text-xs text-muted font-bold uppercase tracking-widest">Current Billing Cycle</p>
         </div>
@@ -95,7 +98,7 @@ const SubscriptionCard = ({ subscription, onAction }) => {
               <XCircle className="h-4 w-4" /> Cancel
             </button>
             <button 
-              onClick={() => onAction('upgrade')}
+              onClick={() => navigate('/plans')}
               className="px-6 py-2.5 bg-primary-violet text-white rounded-xl font-bold hover:bg-primary-purple transition-all shadow-lg shadow-primary-violet/20 ml-auto"
             >
               Upgrade Plan

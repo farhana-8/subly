@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Search, Mail, Shield, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Users, Search, Mail, Shield, CheckCircle2, XCircle, Clock, RefreshCw } from 'lucide-react';
 import adminService from '../../services/adminService';
 import { useToast } from '../../context/ToastContext';
 
@@ -14,7 +14,9 @@ const AdminUsers = () => {
     try {
       setLoading(true);
       const response = await adminService.getAllUsers();
-      setUsers(Array.isArray(response.data) ? response.data : []);
+      // Robust parsing for admin users list
+      const data = response.data?.data || response.data || [];
+      setUsers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Failed to fetch users:', error);
       addToast('Failed to load users list', 'error');
@@ -43,20 +45,28 @@ const AdminUsers = () => {
           <p className="text-muted mt-1">View and manage all registered users.</p>
         </div>
         
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
-          <input 
-            type="text"
-            placeholder="Search by name or email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-bg-card border border-main rounded-2xl text-main focus:outline-none focus:border-primary-violet transition-all"
-          />
+        <div className="flex items-center gap-3">
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
+            <input 
+              type="text"
+              placeholder="Search by name or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-bg-card border border-main rounded-2xl text-main focus:outline-none focus:border-primary-violet transition-all shadow-sm"
+            />
+          </div>
+          <button 
+            onClick={fetchUsers}
+            className="p-3 bg-bg-card border border-main rounded-2xl text-muted hover:text-main transition-all"
+          >
+            <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </div>
 
       <div className="bg-bg-card border border-main rounded-[2.5rem] overflow-hidden shadow-xl">
-        {loading ? (
+        {loading && users.length === 0 ? (
           <div className="p-20 text-center">
             <div className="animate-spin h-10 w-10 border-4 border-primary-violet border-t-transparent rounded-full mx-auto mb-4"></div>
             <p className="text-muted font-bold">Loading users...</p>
@@ -89,7 +99,7 @@ const AdminUsers = () => {
                   >
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary-violet/10 to-primary-magenta/10 flex items-center justify-center text-primary-violet font-black text-lg border border-primary-violet/20">
+                        <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary-violet/10 to-primary-magenta/10 flex items-center justify-center text-primary-violet font-black text-lg border border-primary-violet/20 shadow-sm">
                           {(user.firstName || user.name || 'U')[0]}
                         </div>
                         <div>
@@ -118,7 +128,7 @@ const AdminUsers = () => {
                       </div>
                     </td>
                     <td className="px-8 py-6 text-sm font-bold text-muted">
-                      {new Date(user.createdAt).toLocaleDateString()}
+                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
                     </td>
                   </motion.tr>
                 ))}
