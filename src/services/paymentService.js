@@ -5,15 +5,15 @@ const paymentService = {
   getPaymentHistory: async () => {
     return await api.get('/api/payments');
   },
-  
+
   // Get a single payment detail
   getPayment: async (paymentId) => {
     return await api.get(`/api/payments/${paymentId}`);
   },
 
-  // Create a new pending payment record
+  // Create a new payment record
   createPayment: async (paymentData) => {
-    // paymentData = { subscriptionId, amount, currency, paymentMethod, transactionId }
+    // paymentData = { subscriptionId, amount, currency, paymentMethod }
     return await api.post('/api/payments', paymentData);
   },
 
@@ -21,6 +21,21 @@ const paymentService = {
   verifyRazorpayPayment: async (verificationData) => {
     // verificationData = { razorpayOrderId, razorpayPaymentId, razorpaySignature }
     return await api.post('/api/payments/verify-razorpay', verificationData);
+  },
+
+  // Mark payment as success
+  markPaymentSuccess: async (id) => {
+    return await api.post(`/api/payments/${id}/success`);
+  },
+
+  // Mark payment as fail
+  markPaymentFail: async (id) => {
+    return await api.post(`/api/payments/${id}/fail`);
+  },
+
+  // Refund a payment
+  refundPayment: async (id) => {
+    return await api.post(`/api/payments/${id}/refund`);
   }
 };
 
