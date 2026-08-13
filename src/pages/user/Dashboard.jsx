@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Zap, TrendingUp, Users, CreditCard, RefreshCw } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Zap, TrendingUp, Users, CreditCard, RefreshCw, Bell, ArrowRight } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import subscriptionService from '../../services/subscriptionService';
+import notificationService from '../../services/notificationService';
 import SubscriptionCard from '../../components/user/SubscriptionCard';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useToast } from '../../context/ToastContext';
@@ -11,19 +13,24 @@ const Dashboard = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
   const [subscription, setSubscription] = useState(null);
+  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirmModal, setConfirmModal] = useState({ open: false, type: '', title: '', message: '' });
 
-  const fetchSubscription = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await subscriptionService.getCurrentSubscription();
-      setSubscription(response.data);
+      const [subRes, notifRes] = await Promise.all([
+        subscriptionService.getCurrentSubscription(),
+        notificationService.getNotifications()
+      ]);
+      setSubscription(subRes.data);
+      setNotifications(Array.isArray(notifRes.data) ? notifRes.data.slice(0, 3) : []);
     } catch (error) {
-      console.error('Failed to fetch subscription:', error);
+      console.error('Failed to fetch dashboard data:', error);
       // Don't show toast for 404 if no subscription exists
       if (error.response?.status !== 404) {
-        addToast('Failed to load subscription data', 'error');
+        // addToast('Failed to load dashboard data', 'error');
       }
     } finally {
       setLoading(false);
@@ -31,7 +38,7 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    fetchSubscription();
+    fetchData();
   }, []);
 
   const handleAction = (type) => {
@@ -68,15 +75,15 @@ const Dashboard = () => {
         await subscriptionService.resumeSubscription(subscription.id);
         addToast('Subscription resumed', 'success');
       }
-      fetchSubscription();
+      fetchData();
     } catch (error) {
-      addToast(`Failed to ${type} subscription`, 'error');
+      addToast(error.response?.data?.message || `Failed to ${type} subscription`, 'error');
     }
   };
 
   const stats = [
     { name: 'Active Subscriptions', value: subscription ? '1' : '0', icon: Zap, color: 'text-primary-violet', bg: 'bg-primary-violet/10' },
-    { name: 'Total Spent', value: subscription ? `${subscription.currency === 'INR' ? '₹' : '$'}${subscription.price}` : '$0', icon: TrendingUp, color: 'text-accent-lime', bg: 'bg-accent-lime/10' },
+    { name: 'Total Spent', value: subscription ? `${subscription.currency === 'INR' ? '₹' : '$'}${subscription.price || subscription.plan?.price || '0'}` : '$0', icon: TrendingUp, color: 'text-accent-lime', bg: 'bg-accent-lime/10' },
     { name: 'Team Members', value: '1', icon: Users, color: 'text-primary-magenta', bg: 'bg-primary-magenta/10' },
     { name: 'Next Invoice', value: subscription?.nextRenewalDate ? new Date(subscription.nextRenewalDate).toLocaleDateString() : 'N/A', icon: CreditCard, color: 'text-accent-orange', bg: 'bg-accent-orange/10' },
   ];
@@ -101,7 +108,7 @@ const Dashboard = () => {
           <p className="text-muted mt-1">Here's what's happening with your account today.</p>
         </div>
         <button 
-          onClick={fetchSubscription}
+          onClick={fetchData}
           className="p-3 bg-bg-card border border-main rounded-2xl text-muted hover:text-main transition-all"
         >
           <RefreshCw className="h-5 w-5" />
@@ -131,28 +138,60 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <h3 className="text-xl font-black text-main mb-6 flex items-center gap-2">
-            Current Subscription
-          </h3>
-          <SubscriptionCard 
-            subscription={subscription} 
-            onAction={handleAction} 
-          />
+        <div className="lg:col-span-2 space-y-8">
+          <div>
+            <h3 className="text-xl font-black text-main mb-6 flex items-center gap-2">
+              Current Subscription
+            </h3>
+            <SubscriptionCard 
+              subscription={subscription} 
+              onAction={handleAction} 
+            />
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-black text-main flex items-center gap-2">
+                Recent Notifications
+              </h3>
+              <Link to="/notifications" className="text-sm font-black text-primary-violet hover:underline flex items-center gap-1">
+                View All <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+            <div className="space-y-3">
+              {notifications.length === 0 ? (
+                <div className="bg-bg-card border border-main border-dashed rounded-[2rem] p-10 text-center">
+                  <p className="text-muted text-sm font-bold">No new notifications</p>
+                </div>
+              ) : (
+                notifications.map((n) => (
+                  <div key={n.id} className="bg-bg-card border border-main rounded-2xl p-4 flex gap-4 items-center">
+                    <div className="w-10 h-10 bg-primary-violet/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Bell className="h-5 w-5 text-primary-violet" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-black text-main">{n.title}</div>
+                      <div className="text-xs text-muted truncate max-w-[200px] md:max-w-md">{n.message}</div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
         
         <div className="space-y-6">
           <h3 className="text-xl font-black text-main mb-6">Quick Actions</h3>
           <div className="bg-bg-card border border-main rounded-[2rem] p-6 shadow-lg space-y-3">
-            <button className="w-full py-4 px-6 bg-bg-deep border border-main rounded-2xl text-main font-bold text-left hover:bg-main/5 transition-all flex justify-between items-center group">
+            <Link to="/payments" className="w-full py-4 px-6 bg-bg-deep border border-main rounded-2xl text-main font-bold text-left hover:bg-main/5 transition-all flex justify-between items-center group">
               View Billing History
               <TrendingUp className="h-5 w-5 text-muted group-hover:text-primary-violet transition-colors" />
-            </button>
-            <button className="w-full py-4 px-6 bg-bg-deep border border-main rounded-2xl text-main font-bold text-left hover:bg-main/5 transition-all flex justify-between items-center group">
-              Manage Team
-              <Users className="h-5 w-5 text-muted group-hover:text-primary-magenta transition-colors" />
-            </button>
-            <button className="w-full py-4 px-6 bg-bg-deep border border-main rounded-2xl text-main font-bold text-left hover:bg-main/5 transition-all flex justify-between items-center group">
+            </Link>
+            <Link to="/subscription" className="w-full py-4 px-6 bg-bg-deep border border-main rounded-2xl text-main font-bold text-left hover:bg-main/5 transition-all flex justify-between items-center group">
+              Manage Subscription
+              <Zap className="h-5 w-5 text-muted group-hover:text-primary-magenta transition-colors" />
+            </Link>
+            <button className="w-full py-4 px-6 bg-bg-deep border border-main rounded-2xl text-main font-bold text-left hover:bg-main/5 transition-all flex justify-between items-center group opacity-50 cursor-not-allowed">
               Account Settings
               <CreditCard className="h-5 w-5 text-muted group-hover:text-accent-orange transition-colors" />
             </button>
