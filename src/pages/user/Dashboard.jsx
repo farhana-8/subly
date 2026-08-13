@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Zap, TrendingUp, Users, CreditCard, RefreshCw, Bell, ArrowRight } from 'lucide-react';
+import { Zap, TrendingUp, Users, CreditCard, RefreshCw, Bell, ArrowRight, Settings } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import subscriptionService from '../../services/subscriptionService';
 import notificationService from '../../services/notificationService';
@@ -24,7 +24,7 @@ const Dashboard = () => {
         subscriptionService.getCurrentSubscription(),
         notificationService.getNotifications()
       ]);
-      setSubscription(subRes.data);
+      setSubscription(subRes.data?.data || subRes.data);
       setNotifications(Array.isArray(notifRes.data) ? notifRes.data.slice(0, 3) : []);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
@@ -84,7 +84,6 @@ const Dashboard = () => {
   const stats = [
     { name: 'Active Subscriptions', value: subscription ? '1' : '0', icon: Zap, color: 'text-primary-violet', bg: 'bg-primary-violet/10' },
     { name: 'Total Spent', value: subscription ? `${subscription.currency === 'INR' ? '₹' : '$'}${subscription.price || subscription.plan?.price || '0'}` : '$0', icon: TrendingUp, color: 'text-accent-lime', bg: 'bg-accent-lime/10' },
-    { name: 'Team Members', value: '1', icon: Users, color: 'text-primary-magenta', bg: 'bg-primary-magenta/10' },
     { name: 'Next Invoice', value: subscription?.nextRenewalDate ? new Date(subscription.nextRenewalDate).toLocaleDateString() : 'N/A', icon: CreditCard, color: 'text-accent-orange', bg: 'bg-accent-orange/10' },
   ];
 
@@ -92,8 +91,8 @@ const Dashboard = () => {
     return (
       <div className="space-y-8 animate-pulse">
         <div className="h-10 w-64 bg-main/5 rounded-lg mb-8"></div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-bg-card border border-main rounded-[2rem]"></div>)}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[1, 2, 3].map(i => <div key={i} className="h-32 bg-bg-card border border-main rounded-[2rem]"></div>)}
         </div>
         <div className="h-64 bg-bg-card border border-main rounded-[2rem]"></div>
       </div>
@@ -115,7 +114,7 @@ const Dashboard = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {stats.map((item, idx) => (
           <motion.div 
             key={item.name}
@@ -191,10 +190,10 @@ const Dashboard = () => {
               Manage Subscription
               <Zap className="h-5 w-5 text-muted group-hover:text-primary-magenta transition-colors" />
             </Link>
-            <button className="w-full py-4 px-6 bg-bg-deep border border-main rounded-2xl text-main font-bold text-left hover:bg-main/5 transition-all flex justify-between items-center group opacity-50 cursor-not-allowed">
+            <Link to="/profile" className="w-full py-4 px-6 bg-bg-deep border border-main rounded-2xl text-main font-bold text-left hover:bg-main/5 transition-all flex justify-between items-center group">
               Account Settings
-              <CreditCard className="h-5 w-5 text-muted group-hover:text-accent-orange transition-colors" />
-            </button>
+              <Settings className="h-5 w-5 text-muted group-hover:text-accent-orange transition-colors" />
+            </Link>
           </div>
         </div>
       </div>

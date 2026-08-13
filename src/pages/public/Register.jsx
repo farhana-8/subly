@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Layout, ArrowRight, User, Mail, Lock, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Layout, ArrowRight, User, Mail, Lock, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import authService from '../../services/authService';
 
 const Register = () => {
@@ -12,6 +12,8 @@ const Register = () => {
     password: '',
     confirmPassword: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -149,13 +151,20 @@ const Register = () => {
                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted group-focus-within:text-primary-magenta transition-colors" />
                         <input
                           name="password"
-                          type="password"
+                          type={showPassword ? "text" : "password"}
                           required
                           value={formData.password}
                           onChange={handleChange}
-                          className="w-full bg-bg-deep border border-main rounded-2xl py-3.5 pl-12 pr-4 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-magenta/50 focus:border-primary-magenta transition-all"
+                          className="w-full bg-bg-deep border border-main rounded-2xl py-3.5 pl-12 pr-12 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-magenta/50 focus:border-primary-magenta transition-all"
                           placeholder="••••••••"
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-main transition-colors"
+                        >
+                          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
                       </div>
                     </div>
 
@@ -165,13 +174,20 @@ const Register = () => {
                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted group-focus-within:text-primary-magenta transition-colors" />
                         <input
                           name="confirmPassword"
-                          type="password"
+                          type={showConfirmPassword ? "text" : "password"}
                           required
                           value={formData.confirmPassword}
                           onChange={handleChange}
-                          className="w-full bg-bg-deep border border-main rounded-2xl py-3.5 pl-12 pr-4 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-magenta/50 focus:border-primary-magenta transition-all"
+                          className="w-full bg-bg-deep border border-main rounded-2xl py-3.5 pl-12 pr-12 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-magenta/50 focus:border-primary-magenta transition-all"
                           placeholder="••••••••"
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-main transition-colors"
+                        >
+                          {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
                       </div>
                     </div>
                   </div>

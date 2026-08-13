@@ -20,6 +20,7 @@ const DashboardLayout = () => {
     { name: 'Subscription', path: '/subscription', icon: Shield },
     { name: 'Payments', path: '/payments', icon: CreditCard },
     { name: 'Notifications', path: '/notifications', icon: Bell },
+    { name: 'Profile', path: '/profile', icon: User },
   ];
 
   // Add Admin Dashboard link if user is admin
@@ -58,14 +59,7 @@ const DashboardLayout = () => {
           })}
         </nav>
 
-        <div className="p-6 border-t border-main space-y-2">
-          <Link 
-            to="/dashboard" // Temporarily pointing to dashboard or a real profile page if created
-            className={`flex items-center space-x-3 p-4 rounded-2xl font-bold transition-all text-muted hover:bg-main/5 hover:text-main`}
-          >
-            <User className="h-5 w-5" />
-            <span>Profile</span>
-          </Link>
+        <div className="p-6 border-t border-main">
           <button 
             onClick={handleLogout}
             className="flex items-center space-x-3 text-red-500 p-4 w-full rounded-2xl font-bold hover:bg-red-500/10 transition-all"
@@ -93,9 +87,9 @@ const DashboardLayout = () => {
               <span className="text-sm font-black text-main">{user?.name || user?.firstName || 'User'}</span>
               <span className="text-[10px] font-bold text-muted uppercase tracking-widest">{user?.role || 'Member'}</span>
             </div>
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary-violet to-primary-magenta flex items-center justify-center text-white font-black">
+            <Link to="/profile" className="h-10 w-10 rounded-full bg-gradient-to-br from-primary-violet to-primary-magenta flex items-center justify-center text-white font-black hover:scale-105 transition-all shadow-lg">
               {(user?.name || user?.firstName || 'U')[0]}
-            </div>
+            </Link>
           </div>
         </header>
         

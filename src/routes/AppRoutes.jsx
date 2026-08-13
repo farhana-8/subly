@@ -16,6 +16,7 @@ import Dashboard from '../pages/user/Dashboard';
 import Payments from '../pages/user/Payments';
 import Subscription from '../pages/user/Subscription';
 import Notifications from '../pages/user/Notifications';
+import Profile from '../pages/user/Profile';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import AdminUsers from '../pages/admin/AdminUsers';
 import AdminPlans from '../pages/admin/AdminPlans';
@@ -84,6 +85,17 @@ const AppRoutes = () => {
         }
       >
         <Route index element={<Notifications />} />
+      </Route>
+
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Profile />} />
       </Route>
 
       {/* Admin Protected Routes */}
