@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, Mail, Shield, Save, Key, Loader2, Camera } from 'lucide-react';
+import { User, Mail, Shield, Save, Key, Loader2, Camera, ArrowUpCircle } from 'lucide-react';
 import userService from '../../services/userService';
 import { useToast } from '../../context/ToastContext';
 import useAuth from '../../hooks/useAuth';
@@ -22,12 +22,16 @@ const Profile = () => {
       try {
         setLoading(true);
         const response = await userService.getCurrentUser();
+        // Robust parsing for different backend response structures
         const data = response.data?.data || response.data;
-        setFormData({
-          firstName: data.firstName || '',
-          lastName: data.lastName || '',
-          email: data.email || '',
-        });
+        
+        if (data) {
+          setFormData({
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            email: data.email || '',
+          });
+        }
       } catch (error) {
         console.error('Failed to fetch profile:', error);
         addToast('Failed to load profile details', 'error');

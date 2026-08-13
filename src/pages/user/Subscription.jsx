@@ -16,7 +16,7 @@ const Subscription = () => {
     try {
       setLoading(true);
       const response = await subscriptionService.getCurrentSubscription();
-      // Handle cases where data might be nested or direct
+      // Robust parsing for different backend response structures
       const data = response.data?.data || response.data;
       setSubscription(data || null);
     } catch (error) {

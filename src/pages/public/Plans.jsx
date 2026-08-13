@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, AlertCircle, RefreshCw, Layout, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Check, AlertCircle, RefreshCw, Layout, CheckCircle2, ArrowRight, ShieldAlert } from 'lucide-react';
 import planService from '../../services/planService';
 import subscriptionService from '../../services/subscriptionService';
 import paymentService from '../../services/paymentService';
@@ -27,7 +27,18 @@ const Plans = () => {
     setError(null);
     try {
       const response = await planService.getPlans();
-      setPlans(Array.isArray(response.data) ? response.data : []);
+      // Robust parsing for different backend response structures
+      let plansData = [];
+      if (Array.isArray(response.data)) {
+        plansData = response.data;
+      } else if (response.data?.data && Array.isArray(response.data.data)) {
+        plansData = response.data.data;
+      } else if (response.data?.content && Array.isArray(response.data.content)) {
+        plansData = response.data.content;
+      }
+      
+      // Filter for active plans only if needed, though backend should handle this
+      setPlans(plansData);
     } catch (err) {
       console.error('Failed to fetch plans:', err);
       setError('Unable to load subscription plans. Please try again later.');
@@ -52,18 +63,25 @@ const Plans = () => {
     try {
       // 1. Create Subscription
       const subResponse = await subscriptionService.createSubscription(plan.id);
-      const subscription = subResponse.data;
+      const subscription = subResponse.data?.data || subResponse.data;
+
+      if (!subscription?.id) {
+        throw new Error('Failed to create subscription record.');
+      }
 
       // 2. Create Payment Record (to get Razorpay Order ID)
       const paymentResponse = await paymentService.createPayment({
         subscriptionId: subscription.id,
         amount: plan.price,
         currency: plan.currency || 'INR',
-        paymentMethod: 'RAZORPAY',
-        transactionId: `pending_${Date.now()}` // Temporary placeholder
+        paymentMethod: 'RAZORPAY'
       });
       
-      const paymentData = paymentResponse.data;
+      const paymentData = paymentResponse.data?.data || paymentResponse.data;
+
+      if (!paymentData?.gatewayPaymentId) {
+        throw new Error('Failed to initiate payment gateway.');
+      }
 
       // 3. Load Razorpay Script
       const isLoaded = await loadRazorpay();
@@ -97,7 +115,7 @@ const Plans = () => {
           }
         },
         prefill: {
-          name: user?.name || '',
+          name: user?.name || user?.firstName || '',
           email: user?.email || '',
         },
         theme: {
@@ -115,7 +133,7 @@ const Plans = () => {
 
     } catch (err) {
       console.error('Subscription error:', err);
-      addToast(err.response?.data?.message || 'Failed to initiate subscription', 'error');
+      addToast(err.response?.data?.message || err.message || 'Failed to initiate subscription', 'error');
     } finally {
       setProcessingPlanId(null);
     }
@@ -156,55 +174,82 @@ const Plans = () => {
           <p className="max-w-2xl mx-auto text-lg text-muted">Join hundreds of teams managing their subscriptions with Subly.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {plans.map((plan) => (
-            <motion.div
-              key={plan.id}
-              whileHover={{ y: -10 }}
-              className="relative flex flex-col p-8 md:p-10 rounded-[2.5rem] bg-bg-card border border-main hover:border-primary-violet/30 transition-all shadow-xl group"
+        {error ? (
+          <div className="max-w-xl mx-auto p-12 bg-bg-card border border-main rounded-[2.5rem] text-center shadow-xl">
+            <ShieldAlert className="h-16 w-16 text-red-500/50 mx-auto mb-6" />
+            <h3 className="text-xl font-black text-main mb-2">Service Temporarily Unavailable</h3>
+            <p className="text-muted mb-8">{error}</p>
+            <button 
+              onClick={fetchPlans}
+              className="px-8 py-4 bg-primary-violet text-white rounded-2xl font-black shadow-lg hover:bg-primary-purple transition-all flex items-center gap-2 mx-auto"
             >
-              <div className="mb-8">
-                <h3 className="text-2xl font-black text-main mb-2">{plan.name}</h3>
-                <p className="text-muted text-sm leading-relaxed">{plan.description || 'Premium billing infrastructure.'}</p>
-              </div>
-
-              <div className="mb-8">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-black text-main">
-                    {plan.currency === 'INR' ? '₹' : '$'}{plan.price}
-                  </span>
-                  <span className="text-muted font-bold">/{plan.billingInterval?.toLowerCase() || 'month'}</span>
-                </div>
-              </div>
-
-              <ul className="space-y-4 mb-10 flex-grow">
-                {['Unlimited Access', 'Secure Payments', 'Email Support', 'Dashboard Access'].map((f, i) => (
-                  <li key={i} className="flex items-center gap-3 text-muted text-sm font-medium">
-                    <Check className="h-4 w-4 text-primary-violet" /> {f}
-                  </li>
-                ))}
-              </ul>
-
-              <button
-                onClick={() => handleSubscribe(plan)}
-                disabled={processingPlanId === plan.id}
-                className={`w-full py-4 rounded-2xl font-black text-center transition-all flex items-center justify-center gap-2 ${
-                  processingPlanId === plan.id ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.02]'
-                } ${
-                  plan.name?.toLowerCase().includes('pro') 
-                    ? 'bg-gradient-to-r from-primary-violet to-primary-purple text-white shadow-lg' 
-                    : 'bg-bg-deep border border-main text-main hover:bg-main/5'
-                }`}
+              <RefreshCw className="h-5 w-5" />
+              Try Again
+            </button>
+          </div>
+        ) : plans.length === 0 ? (
+          <div className="max-w-xl mx-auto p-12 bg-bg-card border border-main rounded-[2.5rem] text-center shadow-xl">
+            <Layout className="h-16 w-16 text-muted/30 mx-auto mb-6" />
+            <h3 className="text-xl font-black text-main mb-2">No active plans available</h3>
+            <p className="text-muted mb-8">We are currently updating our subscription tiers. Please check back later.</p>
+            <button 
+              onClick={() => navigate('/')}
+              className="px-8 py-4 bg-bg-deep border border-main text-main rounded-2xl font-black hover:bg-main/5 transition-all"
+            >
+              Back to Home
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {plans.map((plan) => (
+              <motion.div
+                key={plan.id}
+                whileHover={{ y: -10 }}
+                className="relative flex flex-col p-8 md:p-10 rounded-[2.5rem] bg-bg-card border border-main hover:border-primary-violet/30 transition-all shadow-xl group"
               >
-                {processingPlanId === plan.id ? (
-                  <RefreshCw className="h-5 w-5 animate-spin" />
-                ) : (
-                  isAuthenticated ? 'Subscribe Now' : 'Login to Subscribe'
-                )}
-              </button>
-            </motion.div>
-          ))}
-        </div>
+                <div className="mb-8">
+                  <h3 className="text-2xl font-black text-main mb-2">{plan.name}</h3>
+                  <p className="text-muted text-sm leading-relaxed">{plan.description || 'Premium billing infrastructure.'}</p>
+                </div>
+
+                <div className="mb-8">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-5xl font-black text-main">
+                      {plan.currency === 'INR' ? '₹' : '$'}{plan.price}
+                    </span>
+                    <span className="text-muted font-bold">/{plan.billingInterval?.toLowerCase() || 'month'}</span>
+                  </div>
+                </div>
+
+                <ul className="space-y-4 mb-10 flex-grow">
+                  {['Unlimited Access', 'Secure Payments', 'Email Support', 'Dashboard Access'].map((f, i) => (
+                    <li key={i} className="flex items-center gap-3 text-muted text-sm font-medium">
+                      <Check className="h-4 w-4 text-primary-violet" /> {f}
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  onClick={() => handleSubscribe(plan)}
+                  disabled={processingPlanId === plan.id}
+                  className={`w-full py-4 rounded-2xl font-black text-center transition-all flex items-center justify-center gap-2 ${
+                    processingPlanId === plan.id ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.02]'
+                  } ${
+                    plan.name?.toLowerCase().includes('pro') 
+                      ? 'bg-gradient-to-r from-primary-violet to-primary-purple text-white shadow-lg' 
+                      : 'bg-bg-deep border border-main text-main hover:bg-main/5'
+                  }`}
+                >
+                  {processingPlanId === plan.id ? (
+                    <RefreshCw className="h-5 w-5 animate-spin" />
+                  ) : (
+                    isAuthenticated ? 'Subscribe Now' : 'Login to Subscribe'
+                  )}
+                </button>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
 
       <Modal 

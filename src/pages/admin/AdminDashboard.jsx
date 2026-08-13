@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, CreditCard, Shield, TrendingUp, ArrowUpRight, ArrowDownRight, Activity, Zap } from 'lucide-react';
+import { Users, CreditCard, Shield, Activity, Zap } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import adminService from '../../services/adminService';
 import { useToast } from '../../context/ToastContext';
 
@@ -25,11 +26,17 @@ const AdminDashboard = () => {
           adminService.getAllPlans()
         ]);
 
+        // Robust parsing for admin stats
+        const users = usersRes.data?.data || usersRes.data || [];
+        const payments = paymentsRes.data?.data || paymentsRes.data || [];
+        const plans = plansRes.data?.data || plansRes.data || [];
+        const revenue = revenueRes.data?.data !== undefined ? revenueRes.data.data : (revenueRes.data !== undefined ? revenueRes.data : 0);
+
         setStats({
-          totalUsers: usersRes.data?.length || 0,
-          totalRevenue: revenueRes.data || 0,
-          totalPayments: paymentsRes.data?.length || 0,
-          activePlans: plansRes.data?.filter(p => p.active).length || 0
+          totalUsers: Array.isArray(users) ? users.length : 0,
+          totalRevenue: typeof revenue === 'number' ? revenue : 0,
+          totalPayments: Array.isArray(payments) ? payments.length : 0,
+          activePlans: Array.isArray(plans) ? plans.filter(p => p.active).length : 0
         });
       } catch (error) {
         console.error('Failed to fetch admin stats:', error);
@@ -47,32 +54,24 @@ const AdminDashboard = () => {
       name: 'Total Users', 
       value: stats.totalUsers.toLocaleString(), 
       icon: Users, 
-      trend: '+12%', 
-      isUp: true,
       color: 'from-primary-violet to-primary-purple'
     },
     { 
       name: 'Total Revenue', 
       value: `₹${stats.totalRevenue.toLocaleString()}`, 
       icon: CreditCard, 
-      trend: '+8.4%', 
-      isUp: true,
       color: 'from-accent-lime to-emerald-500'
     },
     { 
       name: 'Total Payments', 
       value: stats.totalPayments.toLocaleString(), 
       icon: Activity, 
-      trend: '+5.2%', 
-      isUp: true,
       color: 'from-primary-magenta to-accent-coral'
     },
     { 
       name: 'Active Plans', 
       value: stats.activePlans.toLocaleString(), 
       icon: Zap, 
-      trend: 'Stable', 
-      isUp: true,
       color: 'from-accent-cyan to-primary-violet'
     },
   ];
@@ -111,11 +110,7 @@ const AdminDashboard = () => {
               </div>
               
               <div className="flex items-center gap-2">
-                <div className={`flex items-center text-[10px] font-black px-2 py-0.5 rounded-full ${item.isUp ? 'bg-accent-lime/10 text-accent-lime' : 'bg-red-500/10 text-red-500'}`}>
-                  {item.isUp ? <ArrowUpRight className="h-3 w-3 mr-1" /> : <ArrowDownRight className="h-3 w-3 mr-1" />}
-                  {item.trend}
-                </div>
-                <span className="text-[10px] font-bold text-muted uppercase tracking-wider">vs last month</span>
+                <span className="text-[10px] font-bold text-muted uppercase tracking-wider">Live System Data</span>
               </div>
             </div>
           </motion.div>
