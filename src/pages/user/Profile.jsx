@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { User, Mail, Shield, Save, Key, Loader2, Camera, ArrowUpCircle } from 'lucide-react';
 import userService from '../../services/userService';
 import { useToast } from '../../context/ToastContext';
@@ -172,8 +173,8 @@ const Profile = () => {
 
           <div className="bg-bg-card border border-main rounded-[2.5rem] p-8 shadow-xl">
             <h4 className="text-sm font-black text-main uppercase tracking-widest mb-4">Security</h4>
-            <button 
-              onClick={() => window.location.href = '/forgot-password'}
+            <Link 
+              to="/forgot-password"
               className="w-full flex items-center justify-between p-4 bg-bg-deep border border-main rounded-2xl hover:border-primary-violet transition-all group"
             >
               <div className="flex items-center gap-3">
@@ -181,7 +182,7 @@ const Profile = () => {
                 <span className="text-xs font-black text-main">Change Password</span>
               </div>
               <ArrowUpCircle className="h-4 w-4 text-muted rotate-90" />
-            </button>
+            </Link>
           </div>
         </div>
       </div>

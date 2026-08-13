@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Zap, TrendingUp, Users, CreditCard, RefreshCw, Bell, ArrowRight, Settings } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import subscriptionService from '../../services/subscriptionService';
@@ -12,6 +12,7 @@ import { useToast } from '../../context/ToastContext';
 const Dashboard = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const navigate = useNavigate();
   const [subscription, setSubscription] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +60,7 @@ const Dashboard = () => {
     } else if (type === 'resume') {
       handleConfirmAction('resume');
     } else if (type === 'upgrade') {
-      window.location.href = '/plans';
+      navigate('/plans');
     }
   };
 
