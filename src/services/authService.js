@@ -12,7 +12,7 @@ const authService = {
   },
 
   verifyEmail: async (token) => {
-    return await api.get(`/api/auth/verify-email?token=${token}`);
+    return await api.post('/api/auth/verify-email', { token });
   },
 
   forgotPassword: async (email) => {

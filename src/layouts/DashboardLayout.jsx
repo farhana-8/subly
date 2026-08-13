@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
-import { Layout, LogOut, User, Home, CreditCard } from 'lucide-react';
+import { Layout, LogOut, User, Home, CreditCard, Bell, Shield } from 'lucide-react';
 
 const DashboardLayout = () => {
   const { user, logout } = useAuth();
@@ -15,7 +15,9 @@ const DashboardLayout = () => {
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: Home },
+    { name: 'Subscription', path: '/subscription', icon: Shield },
     { name: 'Payments', path: '/payments', icon: CreditCard },
+    { name: 'Notifications', path: '/notifications', icon: Bell },
     { name: 'Profile', path: '/profile', icon: User },
   ];
 
@@ -68,7 +70,12 @@ const DashboardLayout = () => {
             {navItems.find(item => item.path === location.pathname)?.name || 'Dashboard'}
           </h1>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
+            <Link to="/notifications" className="relative p-2 text-muted hover:text-primary-violet transition-colors">
+              <Bell className="h-6 w-6" />
+              <div className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-primary-violet rounded-full border-2 border-bg-card"></div>
+            </Link>
+
             <div className="hidden sm:flex flex-col items-end">
               <span className="text-sm font-black text-main">{user?.name || user?.firstName || 'User'}</span>
               <span className="text-[10px] font-bold text-muted uppercase tracking-widest">{user?.role || 'Member'}</span>

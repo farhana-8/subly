@@ -10,9 +10,12 @@ import AdminLayout from '../layouts/AdminLayout';
 import Landing from '../pages/public/Landing';
 import Login from '../pages/public/Login';
 import Register from '../pages/public/Register';
+import VerifyEmail from '../pages/public/VerifyEmail';
 import Plans from '../pages/public/Plans';
 import Dashboard from '../pages/user/Dashboard';
 import Payments from '../pages/user/Payments';
+import Subscription from '../pages/user/Subscription';
+import Notifications from '../pages/user/Notifications';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 
 // Route Guards
@@ -31,6 +34,7 @@ const AppRoutes = () => {
         <Route path="/security" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
       </Route>
 
       {/* User Protected Routes */}
@@ -46,6 +50,18 @@ const AppRoutes = () => {
       </Route>
 
       <Route
+        path="/subscription"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Subscription />} />
+        <Route path="history" element={<Payments />} /> {/* Reusing Payments for now as history */}
+      </Route>
+
+      <Route
         path="/payments"
         element={
           <ProtectedRoute>
@@ -54,6 +70,17 @@ const AppRoutes = () => {
         }
       >
         <Route index element={<Payments />} />
+      </Route>
+
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Notifications />} />
       </Route>
 
       {/* Admin Protected Routes */}
