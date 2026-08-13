@@ -9,8 +9,153 @@ import {
   CheckCircle2, 
   ArrowRight,
   Bell,
-  RefreshCw
+  RefreshCw,
+  TrendingUp,
+  Users,
+  Search,
+  Settings,
+  MoreVertical
 } from 'lucide-react';
+
+const DashboardPreview = () => {
+  return (
+    <div className="w-full h-full bg-bg-deep rounded-xl overflow-hidden flex flex-col md:flex-row relative">
+      {/* Sidebar Mock */}
+      <div className="hidden md:flex w-20 lg:w-64 border-r border-main flex-col p-4 gap-8 bg-bg-card/50">
+        <div className="flex items-center gap-3 px-2">
+          <div className="w-8 h-8 rounded-lg bg-primary-violet flex items-center justify-center text-white font-black">S</div>
+          <span className="font-black text-main hidden lg:block">SUBLY</span>
+        </div>
+        <div className="flex flex-col gap-2">
+          {[
+            { icon: BarChart3, label: 'Overview', active: true },
+            { icon: Zap, label: 'Subscriptions', active: false },
+            { icon: Users, label: 'Customers', active: false },
+            { icon: CreditCard, label: 'Payments', active: false },
+            { icon: Bell, label: 'Notifications', active: false },
+            { icon: Settings, label: 'Settings', active: false },
+          ].map((item, i) => (
+            <div 
+              key={i} 
+              className={`flex items-center gap-3 p-3 rounded-xl transition-all ${item.active ? 'bg-primary-violet text-white shadow-lg shadow-primary-violet/20' : 'text-muted hover:bg-main/5'}`}
+            >
+              <item.icon className="w-5 h-5" />
+              <span className="font-bold text-sm hidden lg:block">{item.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Content Mock */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header Mock */}
+        <div className="h-16 border-b border-main flex items-center justify-between px-6 bg-bg-card/30">
+          <div className="flex items-center gap-4 flex-1">
+            <div className="relative w-full max-w-xs hidden sm:block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
+              <div className="w-full h-9 bg-bg-deep border border-main rounded-lg px-10 text-xs text-muted flex items-center">Search analytics...</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="w-8 h-8 rounded-full bg-bg-deep border border-main flex items-center justify-center relative">
+              <Bell className="w-4 h-4 text-muted" />
+              <span className="absolute top-0 right-0 w-2 h-2 bg-primary-magenta rounded-full border-2 border-bg-card"></span>
+            </div>
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary-violet to-primary-magenta border border-white/20"></div>
+          </div>
+        </div>
+
+        {/* Dashboard Content Mock */}
+        <div className="flex-1 p-6 overflow-hidden space-y-6">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { label: 'Total MRR', value: '$42,500', trend: '+12.5%', color: 'text-accent-lime' },
+              { label: 'Active Subs', value: '1,284', trend: '+5.2%', color: 'text-primary-violet' },
+              { label: 'Churn Rate', value: '2.4%', trend: '-0.8%', color: 'text-accent-orange' },
+            ].map((stat, i) => (
+              <div key={i} className="bg-bg-card border border-main rounded-2xl p-4 space-y-2">
+                <div className="flex justify-between items-start">
+                  <span className="text-xs font-bold text-muted uppercase tracking-wider">{stat.label}</span>
+                  <TrendingUp className={`w-4 h-4 ${stat.color}`} />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl font-black text-main">{stat.value}</span>
+                  <span className={`text-[10px] font-black ${stat.color}`}>{stat.trend}</span>
+                </div>
+                <div className="w-full h-1 bg-main/5 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: '70%' }}
+                    transition={{ delay: 1 + (i * 0.2), duration: 1 }}
+                    className={`h-full bg-gradient-to-r ${i === 0 ? 'from-accent-lime to-emerald-500' : i === 1 ? 'from-primary-violet to-primary-purple' : 'from-accent-orange to-accent-coral'}`}
+                  ></motion.div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Table Mock */}
+          <div className="bg-bg-card border border-main rounded-2xl overflow-hidden flex-1 flex flex-col">
+            <div className="px-4 py-3 border-b border-main flex justify-between items-center">
+              <span className="text-xs font-black text-main uppercase tracking-wider">Recent Transactions</span>
+              <MoreVertical className="w-4 h-4 text-muted" />
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-main bg-main/[0.02]">
+                    <th className="px-4 py-2 text-[10px] font-black text-muted uppercase">Customer</th>
+                    <th className="px-4 py-2 text-[10px] font-black text-muted uppercase">Plan</th>
+                    <th className="px-4 py-2 text-[10px] font-black text-muted uppercase">Status</th>
+                    <th className="px-4 py-2 text-[10px] font-black text-muted uppercase text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-main/5">
+                  {[
+                    { name: 'Alex Rivera', plan: 'Pro Monthly', status: 'Success', amount: '$29.00' },
+                    { name: 'Sarah Chen', plan: 'Enterprise', status: 'Success', amount: '$499.00' },
+                    { name: 'Mike Johnson', plan: 'Pro Yearly', status: 'Pending', amount: '$290.00' },
+                    { name: 'Emma Wilson', plan: 'Basic', status: 'Success', amount: '$9.00' },
+                  ].map((row, i) => (
+                    <tr key={i} className="group hover:bg-main/[0.01] transition-colors">
+                      <td className="px-4 py-3 text-xs font-bold text-main">{row.name}</td>
+                      <td className="px-4 py-3 text-[10px] text-muted font-bold">{row.plan}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase ${row.status === 'Success' ? 'bg-accent-lime/10 text-accent-lime' : 'bg-accent-orange/10 text-accent-orange'}`}>
+                          {row.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs font-black text-main text-right">{row.amount}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Floating Badge Mock */}
+      <motion.div 
+        initial={{ x: 20, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ delay: 1.5 }}
+        className="absolute bottom-10 -right-4 bg-bg-card border border-main p-4 rounded-2xl shadow-2xl z-20 hidden lg:block"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-accent-lime/20 flex items-center justify-center text-accent-lime">
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="text-xs font-black text-main">Revenue Milestone</div>
+            <div className="text-[10px] text-muted font-bold">You hit $40k MRR! 🚀</div>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
 const Landing = () => {
   const containerVariants = {
@@ -113,25 +258,14 @@ const Landing = () => {
             </Link>
           </motion.div>
 
-          {/* Product Preview Mockup */}
+          {/* Premium Dashboard Preview */}
           <motion.div 
             variants={itemVariants}
-            className="mt-20 relative mx-auto max-w-5xl rounded-2xl border border-main bg-bg-dark/50 p-2 backdrop-blur-sm shadow-2xl"
+            className="mt-20 relative mx-auto max-w-5xl rounded-2xl border border-main bg-bg-dark/50 p-2 backdrop-blur-sm shadow-2xl overflow-hidden group"
           >
-            <div className="rounded-xl border border-main overflow-hidden bg-bg-deep aspect-[16/9] flex items-center justify-center relative">
-              <div className="absolute inset-0 bg-gradient-to-tr from-primary-violet/5 to-transparent"></div>
-              <div className="text-muted text-sm font-mono uppercase tracking-[0.2em]">Product Preview</div>
-              
-              {/* Decorative floating UI elements */}
-              <div className="absolute top-10 left-10 w-32 h-20 bg-bg-card/50 rounded-lg border border-main p-3 animate-bounce" style={{ animationDuration: '4s' }}>
-                <div className="w-8 h-2 bg-primary-violet/50 rounded-full mb-2"></div>
-                <div className="w-16 h-2 bg-main/10 rounded-full"></div>
-              </div>
-              <div className="absolute bottom-10 right-10 w-40 h-24 bg-bg-card/50 rounded-lg border border-main p-3 animate-bounce" style={{ animationDuration: '6s', animationDelay: '1s' }}>
-                <div className="w-10 h-2 bg-primary-magenta/50 rounded-full mb-2"></div>
-                <div className="w-20 h-2 bg-main/10 rounded-full mb-2"></div>
-                <div className="w-12 h-2 bg-main/10 rounded-full"></div>
-              </div>
+            <div className="absolute inset-0 bg-gradient-to-tr from-primary-violet/10 via-transparent to-primary-magenta/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+            <div className="rounded-xl border border-main overflow-hidden bg-bg-deep aspect-[16/10] md:aspect-[16/9] flex relative shadow-inner">
+              <DashboardPreview />
             </div>
           </motion.div>
         </motion.div>
