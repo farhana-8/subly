@@ -1,10 +1,12 @@
 import React from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
-import { Layout, LogOut, User, Home, CreditCard, Bell, Shield, Settings } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+import { Layout, LogOut, User, Home, CreditCard, Bell, Shield, Settings, Sun, Moon } from 'lucide-react';
 
 const DashboardLayout = () => {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -78,6 +80,13 @@ const DashboardLayout = () => {
           </h1>
           
           <div className="flex items-center gap-6">
+            <button
+              onClick={toggleTheme}
+              className="p-2.5 rounded-xl bg-bg-deep border border-main text-muted hover:text-main transition-all"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </button>
             <Link to="/notifications" className="relative p-2 text-muted hover:text-primary-violet transition-colors">
               <Bell className="h-6 w-6" />
               <div className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-primary-violet rounded-full border-2 border-bg-card"></div>

@@ -1,10 +1,12 @@
 import React from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
-import { Shield, LogOut, Users, Settings, Layout, CreditCard, BarChart3, Home } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+import { Shield, LogOut, Users, Settings, Layout, CreditCard, BarChart3, Home, Sun, Moon } from 'lucide-react';
 
 const AdminLayout = () => {
   const { logout, user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -77,6 +79,13 @@ const AdminLayout = () => {
           </h1>
           
           <div className="flex items-center gap-6">
+            <button
+              onClick={toggleTheme}
+              className="p-2.5 rounded-xl bg-bg-deep border border-main text-muted hover:text-main transition-all"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </button>
             <div className="hidden sm:flex flex-col items-end">
               <span className="text-sm font-black text-main">{user?.name || user?.firstName || 'Admin'}</span>
               <span className="text-[10px] font-bold text-primary-violet uppercase tracking-widest">System Administrator</span>

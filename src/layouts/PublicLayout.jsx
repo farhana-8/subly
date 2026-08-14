@@ -91,7 +91,17 @@ const PublicLayout = () => {
               className="md:hidden bg-bg-dark border-b border-main overflow-hidden"
             >
               <div className="px-4 pt-2 pb-6 space-y-1">
-                {['Features', 'Pricing', 'Security', 'Login'].map((item) => (
+                <div className="flex items-center justify-between px-3 py-4 border-b border-main/5">
+                  <span className="text-sm font-bold text-muted uppercase tracking-widest">Theme</span>
+                  <button 
+                    onClick={toggleTheme}
+                    className="flex items-center gap-2 px-4 py-2 bg-bg-deep border border-main rounded-xl text-xs font-black text-main"
+                  >
+                    {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    {theme === 'dark' ? 'LIGHT' : 'DARK'}
+                  </button>
+                </div>
+                {['Features', 'Plans', 'Security', 'Login'].map((item) => (
                   <Link 
                     key={item}
                     to={`/${item.toLowerCase()}`}
@@ -134,7 +144,7 @@ const PublicLayout = () => {
               <h4 className="text-main font-bold mb-4 text-sm">Product</h4>
               <ul className="space-y-2 text-sm text-muted">
                 <li><Link to="/features" className="hover:text-primary-violet transition-colors">Features</Link></li>
-                <li><Link to="/pricing" className="hover:text-primary-violet transition-colors">Pricing</Link></li>
+                <li><Link to="/plans" className="hover:text-primary-violet transition-colors">Pricing</Link></li>
                 <li><Link to="/security" className="hover:text-primary-violet transition-colors">Security</Link></li>
               </ul>
             </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Shield, Save, Key, Loader2, Camera, ArrowUpCircle, AlertCircle, RefreshCw, ArrowLeft } from 'lucide-react';
+import { User, Mail, Shield, Save, Key, Loader2, Camera, ArrowUpCircle, AlertCircle, RefreshCw, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import userService from '../../services/userService';
 import { useToast } from '../../context/ToastContext';
 import useAuth from '../../hooks/useAuth';
@@ -11,6 +11,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
   const { addToast } = useToast();
   const navigate = useNavigate();
   
@@ -218,6 +219,26 @@ const Profile = () => {
 
           <div className="bg-bg-card border border-main rounded-[2.5rem] p-8 shadow-xl">
             <h4 className="text-sm font-black text-main uppercase tracking-widest mb-4">Security</h4>
+            
+            <div className="mb-4 space-y-2">
+              <div className="relative">
+                <Key className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="New password"
+                  className="w-full pl-10 pr-10 py-3 bg-bg-deep border border-main rounded-2xl text-xs focus:outline-none focus:border-primary-violet transition-all text-main"
+                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-main"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
             <Link 
               to="/forgot-password"
               className="w-full flex items-center justify-between p-4 bg-bg-deep border border-main rounded-2xl hover:border-primary-violet transition-all group"
