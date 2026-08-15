@@ -6,7 +6,7 @@ const subscriptionService = {
   },
   
   getSubscriptionHistory: async () => {
-    return await api.get('/api/subscriptions/history');
+    return await api.get('/api/subscriptions');
   },
 
   createSubscription: async (planId) => {

@@ -25,6 +25,9 @@ api.interceptors.request.use(
     );
 
     const token = localStorage.getItem('token');
+    if (isPublicAuthEndpoint) {
+      config.skipAuthRedirect = true;
+    }
     if (token && !isPublicAuthEndpoint) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -40,11 +43,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response) {
-      if (error.response.status === 401) {
-        // Clear auth state and redirect to login
+      if (error.response.status === 401 && !error.config?.skipAuthRedirect) {
+        // Only invalidate the session for an authenticated request that explicitly
+        // failed authentication. Public auth failures must not log out another session.
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        // Avoid redirect loop if already on login page
         if (!window.location.pathname.includes('/login')) {
           window.location.href = '/login';
         }

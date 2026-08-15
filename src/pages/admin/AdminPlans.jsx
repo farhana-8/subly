@@ -16,7 +16,6 @@ const AdminPlans = () => {
     name: '',
     description: '',
     price: '',
-    currency: 'INR',
     billingInterval: 'MONTHLY',
     active: true
   });
@@ -49,7 +48,6 @@ const AdminPlans = () => {
         name: plan.name,
         description: plan.description,
         price: plan.price,
-        currency: plan.currency,
         billingInterval: plan.billingInterval,
         active: plan.active
       });
@@ -59,7 +57,6 @@ const AdminPlans = () => {
         name: '',
         description: '',
         price: '',
-        currency: 'INR',
         billingInterval: 'MONTHLY',
         active: true
       });
@@ -70,11 +67,19 @@ const AdminPlans = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const payload = {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        price: Number(formData.price),
+        billingInterval: formData.billingInterval,
+        active: formData.active
+      };
+
       if (editingPlan) {
-        await adminService.updatePlan(editingPlan.id, formData);
+        await adminService.updatePlan(editingPlan.id, payload);
         addToast('Plan updated successfully', 'success');
       } else {
-        await adminService.createPlan(formData);
+        await adminService.createPlan(payload);
         addToast('Plan created successfully', 'success');
       }
       setIsModalOpen(false);
@@ -163,14 +168,14 @@ const AdminPlans = () => {
               <p className="text-muted text-sm font-medium mb-8 line-clamp-2">{plan.description || 'No description provided.'}</p>
 
               <div className="flex items-baseline gap-2 mb-8">
-                <span className="text-4xl font-black text-main">{plan.currency === 'INR' ? '₹' : '$'}{plan.price}</span>
+                <span className="text-4xl font-black text-main">₹{plan.price}</span>
                 <span className="text-xs font-bold text-muted uppercase tracking-widest">/ {plan.billingInterval?.toLowerCase() || 'monthly'}</span>
               </div>
 
               <div className="pt-6 border-t border-main/10 flex justify-between items-center">
                 <div className="flex items-center gap-2 text-xs font-bold text-muted">
                   <DollarSign className="h-4 w-4" />
-                  {plan.currency}
+                  INR
                 </div>
                 <div className="flex items-center gap-2 text-xs font-bold text-muted">
                   <Clock className="h-4 w-4" />

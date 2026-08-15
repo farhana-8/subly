@@ -71,6 +71,14 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
   };
 
+  const updateUserInfo = (nextUser) => {
+    setUser((currentUser) => {
+      const mergedUser = { ...(currentUser || {}), ...(nextUser || {}) };
+      localStorage.setItem('user', JSON.stringify(mergedUser));
+      return mergedUser;
+    });
+  };
+
   const refreshUser = async () => {
     try {
       const response = await api.get('/api/users/me');
@@ -90,6 +98,7 @@ export const AuthProvider = ({ children }) => {
         loading,
         login,
         logout,
+        updateUserInfo,
         refreshUser,
       }}
     >

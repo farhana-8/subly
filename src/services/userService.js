@@ -2,8 +2,9 @@ import api from '../api/axios';
 
 const userService = {
   getCurrentUser: async () => {
-    // This should match the backend endpoint for the authenticated user
-    return await api.get('/api/users/me');
+    // Profile can fall back to the cached authenticated user if this optional
+    // refresh endpoint is temporarily unavailable.
+    return await api.get('/api/users/me', { skipAuthRedirect: true });
   },
   
   updateProfile: async (userData) => {

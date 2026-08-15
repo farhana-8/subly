@@ -68,18 +68,21 @@ const Plans = () => {
         throw new Error('Failed to create subscription record.');
       }
 
-      // 2. Create Payment Record (to get Razorpay Order ID)
+      // 2. Create a payment record and obtain the real Razorpay order ID.
+      // The backend requires a unique transactionId for every payment attempt.
+      const transactionId = `SUB-${subscription.id}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
       const paymentResponse = await paymentService.createPayment({
         subscriptionId: subscription.id,
-        amount: plan.price,
-        currency: plan.currency || 'INR',
-        paymentMethod: 'RAZORPAY'
+        amount: Number(plan.price),
+        currency: 'INR',
+        paymentMethod: 'RAZORPAY',
+        transactionId
       });
       
       const paymentData = paymentResponse.data?.data || paymentResponse.data;
 
-      if (!paymentData?.gatewayPaymentId) {
-        throw new Error('Failed to initiate payment gateway.');
+      if (!paymentData?.gatewayPaymentId || !paymentData?.razorpayKeyId) {
+        throw new Error('Razorpay is not configured for this account. Please contact support.');
       }
 
       // 3. Load Razorpay Script
@@ -92,8 +95,8 @@ const Plans = () => {
       // 4. Open Razorpay Checkout
       const options = {
         key: paymentData.razorpayKeyId,
-        amount: paymentData.amount * 100, // in smallest unit
-        currency: paymentData.currency,
+        amount: Math.round(Number(paymentData.amount) * 100), // Razorpay expects paise for INR
+        currency: paymentData.currency || 'INR',
         name: 'Subly',
         description: `Subscription for ${plan.name}`,
         order_id: paymentData.gatewayPaymentId,
@@ -110,7 +113,9 @@ const Plans = () => {
             setSuccessModal({ open: true, planName: plan.name });
             addToast('Subscription active!', 'success');
           } catch (err) {
-            addToast('Payment verification failed. Please contact support.', 'error');
+            addToast(err.response?.data?.message || 'Payment verification failed. Please contact support.', 'error');
+          } finally {
+            setProcessingPlanId(null);
           }
         },
         prefill: {
@@ -122,6 +127,7 @@ const Plans = () => {
         },
         modal: {
           ondismiss: () => {
+            setProcessingPlanId(null);
             addToast('Payment checkout cancelled', 'info');
           }
         }
@@ -132,9 +138,8 @@ const Plans = () => {
 
     } catch (err) {
       console.error('Subscription error:', err);
-      addToast(err.response?.data?.message || err.message || 'Failed to initiate subscription', 'error');
-    } finally {
       setProcessingPlanId(null);
+      addToast(err.response?.data?.message || err.message || 'Failed to initiate subscription', 'error');
     }
   };
 
@@ -229,7 +234,7 @@ const Plans = () => {
                 <div className="mb-8">
                   <div className="flex items-baseline gap-1">
                     <span className="text-5xl font-black text-main">
-                      {plan.currency === 'INR' ? '₹' : '$'}{plan.price}
+                      ₹{plan.price}
                     </span>
                     <span className="text-muted font-bold">/{plan.billingInterval?.toLowerCase() || 'month'}</span>
                   </div>

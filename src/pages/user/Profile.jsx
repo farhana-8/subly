@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Shield, Save, Key, Loader2, Camera, ArrowUpCircle, AlertCircle, RefreshCw, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Shield, Save, Key, Loader2, Camera, ArrowUpCircle, AlertCircle, RefreshCw, ArrowLeft } from 'lucide-react';
 import userService from '../../services/userService';
 import { useToast } from '../../context/ToastContext';
 import useAuth from '../../hooks/useAuth';
@@ -11,7 +11,6 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-  const [showPassword, setShowPassword] = useState(false);
   const { addToast } = useToast();
   const navigate = useNavigate();
   
@@ -39,11 +38,22 @@ const Profile = () => {
     } catch (error) {
       console.error('Failed to fetch profile:', error);
       if (error.response?.status === 401) {
-        setError('Your account could not be authenticated with the server. This may be due to a temporary backend issue.');
+        const cachedUser = user || JSON.parse(localStorage.getItem('user') || 'null');
+        if (cachedUser) {
+          setFormData({
+            firstName: cachedUser.firstName || cachedUser.name?.split(' ')[0] || '',
+            lastName: cachedUser.lastName || cachedUser.name?.split(' ').slice(1).join(' ') || '',
+            email: cachedUser.email || ''
+          });
+          addToast('Showing your saved profile while the server refreshes.', 'info');
+          setError(null);
+        } else {
+          setError('Unable to load your profile at this time.');
+        }
       } else {
         setError(error.response?.data?.message || 'Unable to load your profile at this time.');
+        addToast('Failed to load profile details', 'error');
       }
-      addToast('Failed to load profile details', 'error');
     } finally {
       setLoading(false);
     }
@@ -220,24 +230,9 @@ const Profile = () => {
           <div className="bg-bg-card border border-main rounded-[2.5rem] p-8 shadow-xl">
             <h4 className="text-sm font-black text-main uppercase tracking-widest mb-4">Security</h4>
             
-            <div className="mb-4 space-y-2">
-              <div className="relative">
-                <Key className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="New password"
-                  className="w-full pl-10 pr-10 py-3 bg-bg-deep border border-main rounded-2xl text-xs focus:outline-none focus:border-primary-violet transition-all text-main"
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-main"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
+            <p className="text-xs text-muted leading-relaxed mb-4">
+              Keep your account secure by using the password reset flow. Password fields include a visibility toggle so you can review your entry before submitting.
+            </p>
 
             <Link 
               to="/forgot-password"
