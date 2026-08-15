@@ -1,0 +1,15 @@
+com\subly\billing\controller\AuthControllerIntegrationTest$ProtectedEndpointConfiguration.class
+com\subly\billing\controller\PlanControllerIntegrationTest.class
+com\subly\billing\controller\PaymentControllerIntegrationTest.class
+com\subly\billing\service\RazorpayIntegrationTest.class
+com\subly\billing\entity\UserRepositoryIntegrationTest.class
+com\subly\billing\service\SubscriptionRenewalAndCorsIntegrationTest.class
+com\subly\billing\SubscriptionBillingPlatformApplicationTests.class
+com\subly\billing\controller\E2EEmailTest.class
+com\subly\billing\security\JwtServiceTest.class
+com\subly\billing\controller\AccountRecoveryIntegrationTest.class
+com\subly\billing\service\SubscriptionLifecycleNotificationIntegrationTest$1.class
+com\subly\billing\controller\AuthControllerIntegrationTest.class
+com\subly\billing\controller\AuthControllerIntegrationTest$ProtectedEndpointController.class
+com\subly\billing\controller\SubscriptionControllerIntegrationTest.class
+com\subly\billing\service\SubscriptionLifecycleNotificationIntegrationTest.class

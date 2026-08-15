@@ -1,0 +1,59 @@
+spring:
+  application:
+    name: subscription-billing-platform
+
+  datasource:
+    url: ${SUBLY_DB_URL:jdbc:postgresql://localhost:5432/subly}
+    username: ${SUBLY_DB_USERNAME:postgres}
+    password: ${SUBLY_DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: ${PORT:8081}
+
+spring:
+  mail:
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME}
+    password: ${SPRING_MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+subly:
+  jwt:
+    secret: ${SUBLY_JWT_SECRET}
+    expiration-ms: 3600000
+
+  auth:
+    email-verification-expiration-minutes: 1440
+    password-reset-expiration-minutes: 30
+
+  payment:
+    gateway: ${SUBLY_PAYMENT_GATEWAY:development}
+    currency: INR
+    webhook-secret: ${SUBLY_PAYMENT_WEBHOOK_SECRET}
+
+  razorpay:
+    key-id: ${RAZORPAY_KEY_ID}
+    key-secret: ${RAZORPAY_KEY_SECRET}
+
+  cors:
+    allowed-origins: ${SUBLY_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
+
+  subscription:
+    lifecycle-fixed-delay-ms: 3600000
+    renewal-fixed-delay-ms: 3600000
+    renewal-reminder-fixed-delay-ms: 3600000
+    reminder-days: 7
