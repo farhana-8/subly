@@ -39,10 +39,19 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       const response = await authService.login(credentials);
-      // Backend typically returns { jwt, user } or { accessToken, user }
-      // We check common field names to be robust
-      const token = response.data.jwt || response.data.token || response.data.accessToken || response.data.data?.token;
-      const user = response.data.user || response.data.data?.user;
+      // The current backend returns a flat LoginResponse: { token, id, firstName, lastName, email, role, ... }.
+      // Keep compatibility with nested envelopes used by older deployments.
+      const payload = response.data?.data || response.data || {};
+      const token = payload.jwt || payload.token || payload.accessToken;
+      const user = payload.user || (payload.email ? {
+        id: payload.id,
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        email: payload.email,
+        role: payload.role,
+        status: payload.status,
+        emailVerified: payload.emailVerified,
+      } : null);
       
       if (!token) {
         throw new Error('Authentication failed: No token received from server.');

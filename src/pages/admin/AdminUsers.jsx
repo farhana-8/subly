@@ -65,6 +65,10 @@ const AdminUsers = () => {
         </div>
       </div>
 
+      <div className="rounded-2xl border border-primary-violet/20 bg-primary-violet/5 p-4 text-sm leading-relaxed text-muted">
+        <span className="font-black text-main">Admin provisioning:</span> public registration creates a normal USER account. The backend exposes no public create-admin or role-change endpoint, so ADMIN accounts must be provisioned through the server-side database or deployment process before using <span className="font-mono text-primary-violet">/admin/login</span>.
+      </div>
+
       <div className="bg-bg-card border border-main rounded-[2.5rem] overflow-hidden shadow-xl">
         {loading && users.length === 0 ? (
           <div className="p-20 text-center">

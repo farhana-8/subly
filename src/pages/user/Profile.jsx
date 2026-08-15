@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Shield, Save, Key, Loader2, Camera, ArrowUpCircle, AlertCircle, RefreshCw, ArrowLeft } from 'lucide-react';
+import { User, Mail, Shield, Key, ArrowUpCircle, AlertCircle, RefreshCw, ArrowLeft } from 'lucide-react';
 import userService from '../../services/userService';
 import { useToast } from '../../context/ToastContext';
 import useAuth from '../../hooks/useAuth';
 
 const Profile = () => {
-  const { user, updateUserInfo } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const { addToast } = useToast();
   const navigate = useNavigate();
+  const [profile, setProfile] = useState(user || null);
   
   const [formData, setFormData] = useState({
     firstName: '',
@@ -29,6 +29,7 @@ const Profile = () => {
       const data = response.data?.data || response.data;
       
       if (data) {
+        setProfile(data);
         setFormData({
           firstName: data.firstName || '',
           lastName: data.lastName || '',
@@ -40,6 +41,7 @@ const Profile = () => {
       if (error.response?.status === 401) {
         const cachedUser = user || JSON.parse(localStorage.getItem('user') || 'null');
         if (cachedUser) {
+          setProfile(cachedUser);
           setFormData({
             firstName: cachedUser.firstName || cachedUser.name?.split(' ')[0] || '',
             lastName: cachedUser.lastName || cachedUser.name?.split(' ').slice(1).join(' ') || '',
@@ -62,26 +64,6 @@ const Profile = () => {
   useEffect(() => {
     fetchProfile();
   }, []);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      setSaving(true);
-      const response = await userService.updateProfile(formData);
-      const updatedData = response.data?.data || response.data;
-      
-      // Update local auth context if needed
-      if (updateUserInfo) {
-        updateUserInfo(updatedData);
-      }
-      
-      addToast('Profile updated successfully', 'success');
-    } catch (error) {
-      addToast(error.response?.data?.message || 'Failed to update profile', 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -149,7 +131,7 @@ const Profile = () => {
           >
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary-violet/5 rounded-full blur-[80px] -mr-32 -mt-32"></div>
             
-            <form onSubmit={handleSubmit} className="relative z-10 space-y-6">
+            <div className="relative z-10 space-y-6">
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="space-y-2 flex-1">
                   <label className="text-xs font-black text-muted uppercase tracking-widest">First Name</label>
@@ -157,9 +139,8 @@ const Profile = () => {
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
                     <input 
                       type="text"
-                      required
+                      disabled
                       value={formData.firstName}
-                      onChange={(e) => setFormData({...formData, firstName: e.target.value})}
                       className="w-full pl-12 pr-4 py-3 bg-bg-deep border border-main rounded-xl text-main focus:outline-none focus:border-primary-violet transition-all"
                     />
                   </div>
@@ -170,9 +151,8 @@ const Profile = () => {
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
                     <input 
                       type="text"
-                      required
+                      disabled
                       value={formData.lastName}
-                      onChange={(e) => setFormData({...formData, lastName: e.target.value})}
                       className="w-full pl-12 pr-4 py-3 bg-bg-deep border border-main rounded-xl text-main focus:outline-none focus:border-primary-violet transition-all"
                     />
                   </div>
@@ -193,17 +173,10 @@ const Profile = () => {
                 <p className="text-[10px] text-muted font-bold italic">Email cannot be changed. Contact support for assistance.</p>
               </div>
 
-              <div className="pt-4">
-                <button 
-                  type="submit"
-                  disabled={saving}
-                  className="flex items-center gap-2 px-8 py-4 bg-primary-violet text-white rounded-2xl font-black shadow-lg shadow-primary-violet/20 hover:bg-primary-purple transition-all disabled:opacity-50"
-                >
-                  {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-                  Save Changes
-                </button>
+              <div className="rounded-2xl border border-main bg-bg-deep p-4 text-sm leading-relaxed text-muted">
+                Profile editing is currently unavailable because the backend exposes a read-only `/api/auth/me` endpoint and no profile-update endpoint. Your saved account details are shown above without sending unsupported requests.
               </div>
-            </form>
+            </div>
           </motion.div>
         </div>
 
@@ -214,17 +187,20 @@ const Profile = () => {
               <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary-violet to-primary-magenta flex items-center justify-center text-white text-3xl font-black border-4 border-bg-card shadow-xl">
                 {(formData.firstName || 'U')[0]}
               </div>
-              <button className="absolute bottom-0 right-0 p-2 bg-main text-bg-deep rounded-full border-2 border-bg-card hover:scale-110 transition-all shadow-lg">
-                <Camera className="h-4 w-4" />
-              </button>
             </div>
             <h3 className="text-xl font-black text-main">{formData.firstName} {formData.lastName}</h3>
             <div className={`inline-flex items-center gap-1.5 px-3 py-1 mt-2 rounded-full text-[10px] font-black border uppercase tracking-widest ${
               user?.role === 'ADMIN' ? 'bg-primary-violet/10 text-primary-violet border-primary-violet/20' : 'bg-bg-deep border-main text-muted'
             }`}>
               <Shield className="h-3 w-3" />
-              {user?.role || 'Member'}
+              {profile?.role || user?.role || 'Member'}
             </div>
+            {typeof profile?.emailVerified === 'boolean' && (
+              <div className={`mt-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold ${profile.emailVerified ? 'bg-accent-lime/10 text-accent-lime' : 'bg-accent-orange/10 text-accent-orange'}`}>
+                <span className={`h-2 w-2 rounded-full ${profile.emailVerified ? 'bg-accent-lime' : 'bg-accent-orange'}`} />
+                {profile.emailVerified ? 'Email verified' : 'Email not verified'}
+              </div>
+            )}
           </div>
 
           <div className="bg-bg-card border border-main rounded-[2.5rem] p-8 shadow-xl">

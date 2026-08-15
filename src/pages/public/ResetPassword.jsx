@@ -18,6 +18,14 @@ const ResetPassword = () => {
   const [error, setError] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
 
+  useEffect(() => {
+    if (!isSuccess) return undefined;
+    const redirectTimer = window.setTimeout(() => {
+      navigate('/login', { replace: true });
+    }, 1800);
+    return () => window.clearTimeout(redirectTimer);
+  }, [isSuccess, navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -40,7 +48,7 @@ const ResetPassword = () => {
     setLoading(true);
 
     try {
-      await authService.resetPassword({ token, password });
+      await authService.resetPassword({ token, newPassword: password });
       setIsSuccess(true);
       addToast('Password reset successfully!', 'success');
     } catch (err) {

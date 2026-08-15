@@ -12,6 +12,7 @@ import Modal from '../../components/common/Modal';
 
 const Plans = () => {
   const [plans, setPlans] = useState([]);
+  const [currentSubscription, setCurrentSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [processingPlanId, setProcessingPlanId] = useState(null);
   const [error, setError] = useState(null);
@@ -51,10 +52,35 @@ const Plans = () => {
     fetchPlans();
   }, []);
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setCurrentSubscription(null);
+      return undefined;
+    }
+
+    let active = true;
+    subscriptionService.getCurrentSubscription()
+      .then((response) => {
+        if (active) setCurrentSubscription(response.data?.data || response.data || null);
+      })
+      .catch((err) => {
+        if (active && err.response?.status === 404) setCurrentSubscription(null);
+      });
+
+    return () => { active = false; };
+  }, [isAuthenticated]);
+
   const handleSubscribe = async (plan) => {
+    if (processingPlanId !== null) return;
     if (!isAuthenticated) {
       addToast('Please login to subscribe', 'info');
       navigate('/login', { state: { from: location, planId: plan.id } });
+      return;
+    }
+
+    if (currentSubscription && ['ACTIVE', 'PAUSED'].includes(currentSubscription.status)) {
+      addToast('You already have a subscription. Manage it from the subscription page.', 'info');
+      navigate('/subscription');
       return;
     }
 
@@ -88,6 +114,7 @@ const Plans = () => {
       // 3. Load Razorpay Script
       const isLoaded = await loadRazorpay();
       if (!isLoaded) {
+        setProcessingPlanId(null);
         addToast('Razorpay SDK failed to load. Are you online?', 'error');
         return;
       }
@@ -101,15 +128,24 @@ const Plans = () => {
         description: `Subscription for ${plan.name}`,
         order_id: paymentData.gatewayPaymentId,
         handler: async (response) => {
-          // 5. Verify Payment on Backend
+          // 5. Verify Payment on Backend only after Razorpay returns all signature fields.
           try {
+            if (!response?.razorpay_order_id || !response?.razorpay_payment_id || !response?.razorpay_signature) {
+              throw new Error('Razorpay returned an incomplete payment response.');
+            }
             addToast('Verifying payment...', 'info');
             await paymentService.verifyRazorpayPayment({
               razorpayOrderId: response.razorpay_order_id,
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature
             });
-            
+
+            // Re-read both billing surfaces after verification so subsequent views use fresh backend state.
+            const [subscriptionRefresh] = await Promise.all([
+              subscriptionService.getCurrentSubscription(),
+              paymentService.getPaymentHistory(),
+            ]);
+            setCurrentSubscription(subscriptionRefresh.data?.data || subscriptionRefresh.data || null);
             setSuccessModal({ open: true, planName: plan.name });
             addToast('Subscription active!', 'success');
           } catch (err) {
@@ -134,6 +170,10 @@ const Plans = () => {
       };
 
       const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', (failure) => {
+        setProcessingPlanId(null);
+        addToast(failure?.error?.description || 'Razorpay could not complete the payment.', 'error');
+      });
       rzp.open();
 
     } catch (err) {
@@ -240,19 +280,25 @@ const Plans = () => {
                   </div>
                 </div>
 
-                <ul className="space-y-4 mb-10 flex-grow">
-                  {['Unlimited Access', 'Secure Payments', 'Email Support', 'Dashboard Access'].map((f, i) => (
-                    <li key={i} className="flex items-center gap-3 text-muted text-sm font-medium">
-                      <Check className="h-4 w-4 text-primary-violet" /> {f}
-                    </li>
-                  ))}
-                </ul>
+                <div className="mb-10 flex-grow">
+                  {Array.isArray(plan.features) && plan.features.length > 0 ? (
+                    <ul className="space-y-4">
+                      {plan.features.map((feature, index) => (
+                        <li key={`${plan.id}-feature-${index}`} className="flex items-center gap-3 text-muted text-sm font-medium">
+                          <Check className="h-4 w-4 text-primary-violet" /> {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm leading-relaxed text-muted">Feature details are not provided for this plan.</p>
+                  )}
+                </div>
 
                 <button
                   onClick={() => handleSubscribe(plan)}
-                  disabled={processingPlanId === plan.id}
+                  disabled={processingPlanId !== null}
                   className={`w-full py-4 rounded-2xl font-black text-center transition-all flex items-center justify-center gap-2 ${
-                    processingPlanId === plan.id ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.02]'
+                    processingPlanId !== null ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.02]'
                   } ${
                     plan.name?.toLowerCase().includes('pro') 
                       ? 'bg-gradient-to-r from-primary-violet to-primary-purple text-white shadow-lg' 
@@ -261,6 +307,8 @@ const Plans = () => {
                 >
                   {processingPlanId === plan.id ? (
                     <RefreshCw className="h-5 w-5 animate-spin" />
+                  ) : currentSubscription && ['ACTIVE', 'PAUSED'].includes(currentSubscription.status) ? (
+                    'Manage Current Subscription'
                   ) : (
                     isAuthenticated ? 'Subscribe Now' : 'Login to Subscribe'
                   )}

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Zap, Calendar, CreditCard, RefreshCw, Pause, Play, XCircle } from 'lucide-react';
 
-const SubscriptionCard = ({ subscription, onAction }) => {
+const SubscriptionCard = ({ subscription, onAction, actionLoading = false }) => {
   const navigate = useNavigate();
 
   if (!subscription) {
@@ -76,8 +76,8 @@ const SubscriptionCard = ({ subscription, onAction }) => {
             <CreditCard className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-xs text-muted font-bold uppercase">Payment Method</p>
-            <p className="text-main font-bold">Razorpay Secure</p>
+            <p className="text-xs text-muted font-bold uppercase">Billing Interval</p>
+            <p className="text-main font-bold">{interval || plan?.billingInterval || 'N/A'}</p>
           </div>
         </div>
       </div>
@@ -87,12 +87,14 @@ const SubscriptionCard = ({ subscription, onAction }) => {
           <>
             <button 
               onClick={() => onAction('pause')}
+              disabled={actionLoading}
               className="px-6 py-2.5 bg-bg-deep border border-main text-main rounded-xl font-bold hover:bg-main/5 transition-all flex items-center gap-2"
             >
               <Pause className="h-4 w-4" /> Pause
             </button>
             <button 
               onClick={() => onAction('cancel')}
+              disabled={actionLoading}
               className="px-6 py-2.5 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl font-bold hover:bg-red-500/20 transition-all flex items-center gap-2"
             >
               <XCircle className="h-4 w-4" /> Cancel
@@ -109,12 +111,14 @@ const SubscriptionCard = ({ subscription, onAction }) => {
           <>
             <button 
               onClick={() => onAction('resume')}
+              disabled={actionLoading}
               className="px-6 py-2.5 bg-accent-lime text-white rounded-xl font-bold hover:bg-emerald-600 transition-all flex items-center gap-2"
             >
               <Play className="h-4 w-4" /> Resume
             </button>
             <button 
               onClick={() => onAction('cancel')}
+              disabled={actionLoading}
               className="px-6 py-2.5 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl font-bold hover:bg-red-500/20 transition-all flex items-center gap-2"
             >
               <XCircle className="h-4 w-4" /> Cancel

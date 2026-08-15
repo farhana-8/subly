@@ -11,9 +11,10 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const isAdminEntry = location.pathname === '/admin/login';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,20 +24,24 @@ const Login = () => {
     try {
       const data = await login({ email, password });
       
-      // Extract user role from response
-      const user = data.user || data.data?.user;
+      // The backend returns role on the flat LoginResponse, with nested support for older envelopes.
+      const user = data.user || data.data?.user || data;
       const isAdmin = user?.role === 'ADMIN' || user?.roles?.includes('ADMIN');
       
-      // Determine redirection target
-      let target = location.state?.from?.pathname;
-      
-      if (!target || target === '/') {
+      if (isAdminEntry && !isAdmin) {
+        logout();
+        throw new Error('This account does not have admin access.');
+      }
+
+      // Determine redirection target without allowing a normal user to enter admin routes.
+      let target = isAdminEntry ? '/admin/dashboard' : location.state?.from?.pathname;
+      if (!target || target === '/' || target.startsWith('/admin')) {
         target = isAdmin ? '/admin/dashboard' : '/dashboard';
       }
-      
+
       navigate(target, { replace: true });
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid email or password. Please try again.');
+      setError(err.response?.data?.message || err.message || 'Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -60,8 +65,8 @@ const Login = () => {
               </div>
               <span className="ml-3 text-2xl font-black text-main uppercase tracking-tighter">Subly</span>
             </Link>
-            <h2 className="text-3xl font-black text-main">Welcome back</h2>
-            <p className="text-muted mt-2">Enter your credentials to access your dashboard</p>
+            <h2 className="text-3xl font-black text-main">{isAdminEntry ? 'Admin access' : 'Welcome back'}</h2>
+            <p className="text-muted mt-2">{isAdminEntry ? 'Sign in with an existing ADMIN account to continue.' : 'Enter your credentials to access your dashboard'}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -136,10 +141,17 @@ const Login = () => {
 
           <div className="mt-10 text-center">
             <p className="text-muted text-sm">
-              Don't have an account?{' '}
-              <Link to="/register" className="text-main font-black hover:text-primary-violet transition-colors">
-                Start 14-day free trial
-              </Link>
+              {isAdminEntry ? (
+                <>
+                  Need standard user access?{' '}
+                  <Link to="/login" className="text-main font-black hover:text-primary-violet transition-colors">Sign in here</Link>
+                </>
+              ) : (
+                <>
+                  Don't have an account?{' '}
+                  <Link to="/register" className="text-main font-black hover:text-primary-violet transition-colors">Start 14-day free trial</Link>
+                </>
+              )}
             </p>
           </div>
         </div>

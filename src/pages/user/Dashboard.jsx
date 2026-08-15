@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { Zap, TrendingUp, Users, CreditCard, RefreshCw, Bell, ArrowRight, Settings } from 'lucide-react';
+import { Zap, TrendingUp, CreditCard, RefreshCw, Bell, ArrowRight, Settings, Compass } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import subscriptionService from '../../services/subscriptionService';
 import notificationService from '../../services/notificationService';
@@ -16,26 +16,38 @@ const Dashboard = () => {
   const [subscription, setSubscription] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [dataError, setDataError] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const [confirmModal, setConfirmModal] = useState({ open: false, type: '', title: '', message: '' });
 
   const fetchData = async () => {
     setLoading(true);
-    try {
-      const [subRes, notifRes] = await Promise.all([
-        subscriptionService.getCurrentSubscription(),
-        notificationService.getNotifications()
-      ]);
-      setSubscription(subRes.data?.data || subRes.data);
-      setNotifications(Array.isArray(notifRes.data) ? notifRes.data.slice(0, 3) : []);
-    } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
-      // Don't show toast for 404 if no subscription exists
-      if (error.response?.status !== 404) {
-        // addToast('Failed to load dashboard data', 'error');
-      }
-    } finally {
-      setLoading(false);
+    setDataError(null);
+    const [subscriptionResult, notificationResult] = await Promise.allSettled([
+      subscriptionService.getCurrentSubscription(),
+      notificationService.getNotifications(),
+    ]);
+
+    if (subscriptionResult.status === 'fulfilled') {
+      setSubscription(subscriptionResult.value.data?.data || subscriptionResult.value.data || null);
+    } else if (subscriptionResult.reason?.response?.status === 404) {
+      setSubscription(null);
+    } else {
+      console.error('Failed to fetch subscription:', subscriptionResult.reason);
+      setSubscription(null);
+      setDataError('Your subscription details could not be loaded.');
     }
+
+    if (notificationResult.status === 'fulfilled') {
+      const notificationsData = notificationResult.value.data?.data || notificationResult.value.data;
+      setNotifications(Array.isArray(notificationsData) ? notificationsData.slice(0, 3) : []);
+    } else {
+      console.error('Failed to fetch notifications:', notificationResult.reason);
+      setNotifications([]);
+      setDataError((currentError) => currentError || 'Recent notifications could not be loaded.');
+    }
+
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -65,6 +77,8 @@ const Dashboard = () => {
   };
 
   const handleConfirmAction = async (type) => {
+    if (!subscription || actionLoading) return;
+    setActionLoading(true);
     try {
       if (type === 'cancel') {
         await subscriptionService.cancelSubscription(subscription.id);
@@ -79,12 +93,14 @@ const Dashboard = () => {
       fetchData();
     } catch (error) {
       addToast(error.response?.data?.message || `Failed to ${type} subscription`, 'error');
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const stats = [
     { name: 'Active Subscriptions', value: subscription ? '1' : '0', icon: Zap, color: 'text-primary-violet', bg: 'bg-primary-violet/10' },
-    { name: 'Total Spent', value: subscription ? `${subscription.currency === 'INR' ? '₹' : '$'}${subscription.price || subscription.plan?.price || '0'}` : '$0', icon: TrendingUp, color: 'text-accent-lime', bg: 'bg-accent-lime/10' },
+    { name: 'Current Plan Price', value: subscription ? `${subscription.currency === 'INR' ? '₹' : subscription.currency ? `${subscription.currency} ` : ''}${subscription.price ?? subscription.plan?.price ?? '—'}` : '—', icon: TrendingUp, color: 'text-accent-lime', bg: 'bg-accent-lime/10' },
     { name: 'Next Invoice', value: subscription?.nextRenewalDate ? new Date(subscription.nextRenewalDate).toLocaleDateString() : 'N/A', icon: CreditCard, color: 'text-accent-orange', bg: 'bg-accent-orange/10' },
   ];
 
@@ -102,6 +118,15 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8 transition-colors duration-300">
+      {dataError && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-accent-orange/20 bg-accent-orange/10 p-4 text-sm text-main sm:flex-row sm:items-center sm:justify-between">
+          <span>{dataError}</span>
+          <button onClick={fetchData} className="inline-flex items-center gap-2 font-black text-primary-violet hover:text-primary-magenta">
+            <RefreshCw className="h-4 w-4" /> Retry
+          </button>
+        </div>
+      )}
+
       <div className="flex justify-between items-end mb-4">
         <div>
           <h2 className="text-3xl font-black text-main">Welcome back, {user?.name || user?.firstName || 'User'}</h2>
@@ -144,8 +169,9 @@ const Dashboard = () => {
               Current Subscription
             </h3>
             <SubscriptionCard 
-              subscription={subscription} 
-              onAction={handleAction} 
+              subscription={subscription}
+              onAction={handleAction}
+              actionLoading={actionLoading}
             />
           </div>
 
@@ -183,6 +209,10 @@ const Dashboard = () => {
         <div className="space-y-6">
           <h3 className="text-xl font-black text-main mb-6">Quick Actions</h3>
           <div className="bg-bg-card border border-main rounded-[2rem] p-6 shadow-lg space-y-3">
+            <Link to="/plans" className="w-full py-4 px-6 bg-bg-deep border border-main rounded-2xl text-main font-bold text-left hover:bg-main/5 transition-all flex justify-between items-center group">
+              Explore Plans
+              <Compass className="h-5 w-5 text-muted group-hover:text-primary-violet transition-colors" />
+            </Link>
             <Link to="/payments" className="w-full py-4 px-6 bg-bg-deep border border-main rounded-2xl text-main font-bold text-left hover:bg-main/5 transition-all flex justify-between items-center group">
               View Billing History
               <TrendingUp className="h-5 w-5 text-muted group-hover:text-primary-violet transition-colors" />
@@ -190,6 +220,10 @@ const Dashboard = () => {
             <Link to="/subscription" className="w-full py-4 px-6 bg-bg-deep border border-main rounded-2xl text-main font-bold text-left hover:bg-main/5 transition-all flex justify-between items-center group">
               Manage Subscription
               <Zap className="h-5 w-5 text-muted group-hover:text-primary-magenta transition-colors" />
+            </Link>
+            <Link to="/notifications" className="w-full py-4 px-6 bg-bg-deep border border-main rounded-2xl text-main font-bold text-left hover:bg-main/5 transition-all flex justify-between items-center group">
+              Notifications
+              <Bell className="h-5 w-5 text-muted group-hover:text-primary-magenta transition-colors" />
             </Link>
             <Link to="/profile" className="w-full py-4 px-6 bg-bg-deep border border-main rounded-2xl text-main font-bold text-left hover:bg-main/5 transition-all flex justify-between items-center group">
               Account Settings

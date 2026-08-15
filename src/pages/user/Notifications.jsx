@@ -8,6 +8,7 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const { addToast } = useToast();
 
   const fetchNotifications = async () => {
@@ -32,26 +33,37 @@ const Notifications = () => {
   }, []);
 
   const handleMarkAsRead = async (id) => {
+    if (actionLoading) return;
+    setActionLoading(true);
     try {
       await notificationService.markAsRead(id);
-      setNotifications(notifications.map(n => 
-        n.id === id ? { ...n, read: true } : n
-      ));
+      setNotifications((current) => current.map((notification) => (
+        notification.id === id ? { ...notification, read: true } : notification
+      )));
       addToast('Notification marked as read', 'success');
     } catch (error) {
-      addToast('Failed to mark notification as read', 'error');
+      addToast(error.response?.data?.message || 'Failed to mark notification as read', 'error');
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleMarkAllAsRead = async () => {
+    if (actionLoading) return;
+    setActionLoading(true);
     try {
       await notificationService.markAllAsRead();
-      setNotifications(notifications.map(n => ({ ...n, read: true })));
+      setNotifications((current) => current.map((notification) => ({ ...notification, read: true })));
       addToast('All notifications marked as read', 'success');
     } catch (error) {
-      addToast('Failed to mark all as read', 'error');
+      addToast(error.response?.data?.message || 'Failed to mark all as read', 'error');
+    } finally {
+      setActionLoading(false);
     }
   };
+
+  const unreadCount = notifications.filter((notification) => !notification.read).length;
+  const formatDate = (value) => value ? new Date(value).toLocaleString() : 'N/A';
 
   if (loading) {
     return (
@@ -66,14 +78,18 @@ const Notifications = () => {
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-4xl font-black text-main mb-2">Notifications</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-4xl font-black text-main mb-2">Notifications</h1>
+            {unreadCount > 0 && <span className="mb-2 rounded-full bg-primary-violet px-3 py-1 text-xs font-black text-white">{unreadCount} unread</span>}
+          </div>
           <p className="text-muted font-bold">Stay updated with your account activity</p>
         </div>
         <div className="flex items-center gap-3">
           {notifications.some(n => !n.read) && (
             <button
               onClick={handleMarkAllAsRead}
-              className="flex items-center gap-2 px-4 py-2 bg-bg-deep border border-main rounded-xl text-sm font-black text-main hover:bg-main hover:text-bg-deep transition-all"
+              disabled={actionLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-bg-deep border border-main rounded-xl text-sm font-black text-main hover:bg-main hover:text-bg-deep transition-all disabled:cursor-not-allowed disabled:opacity-50"
             >
               <CheckSquare className="w-4 h-4" />
               Mark all as read
@@ -115,7 +131,7 @@ const Notifications = () => {
             <div className="divide-y divide-main/5">
               {notifications.map((notification, idx) => (
                 <motion.div
-                  key={notification.id}
+                  key={notification.id || `notification-${idx}`}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
@@ -131,7 +147,7 @@ const Notifications = () => {
                       </h3>
                       <span className="text-[10px] font-black text-muted uppercase tracking-widest flex items-center gap-1.5">
                         <Clock className="w-3 h-3" />
-                        {new Date(notification.createdAt).toLocaleDateString()}
+                        {formatDate(notification.createdAt)}
                       </span>
                     </div>
                     <p className="text-muted font-medium text-sm leading-relaxed">
@@ -140,7 +156,8 @@ const Notifications = () => {
                     {!notification.read && (
                       <button
                         onClick={() => handleMarkAsRead(notification.id)}
-                        className="mt-3 text-xs font-black text-primary-violet hover:underline flex items-center gap-1"
+                        disabled={actionLoading}
+                        className="mt-3 text-xs font-black text-primary-violet hover:underline flex items-center gap-1 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Mark as read
                       </button>

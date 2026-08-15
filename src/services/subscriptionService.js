@@ -25,9 +25,6 @@ const subscriptionService = {
     return await api.post(`/api/subscriptions/${id}/cancel`);
   },
 
-  upgradeSubscription: async (id, newPlanId) => {
-    return await api.post(`/api/subscriptions/${id}/upgrade`, { newPlanId });
-  }
 };
 
 export default subscriptionService;

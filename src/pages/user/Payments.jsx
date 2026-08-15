@@ -31,6 +31,13 @@ const Payments = () => {
     fetchPayments();
   }, []);
 
+  const formatDate = (value) => value ? new Date(value).toLocaleString() : 'N/A';
+  const formatAmount = (payment) => {
+    if (payment.amount === undefined || payment.amount === null) return '—';
+    const prefix = payment.currency === 'INR' ? '₹' : payment.currency ? `${payment.currency} ` : '';
+    return `${prefix}${payment.amount}`;
+  };
+
   const getStatusIcon = (status) => {
     switch (status) {
       case 'SUCCESS':
@@ -128,7 +135,7 @@ const Payments = () => {
                 <tbody className="divide-y divide-main/5">
                   {payments.map((payment, idx) => (
                     <motion.tr 
-                      key={payment.id}
+                      key={payment.id || payment.gatewayPaymentId || payment.transactionId || `payment-${idx}`}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: idx * 0.05 }}
@@ -137,7 +144,7 @@ const Payments = () => {
                       <td className="px-6 py-5 whitespace-nowrap">
                         <div className="flex items-center gap-2 text-main font-bold">
                           <Calendar className="h-4 w-4 text-muted" />
-                          {new Date(payment.createdAt).toLocaleDateString()}
+                          {formatDate(payment.createdAt)}
                         </div>
                       </td>
                       <td className="px-6 py-5 font-mono text-xs text-muted">
@@ -145,12 +152,12 @@ const Payments = () => {
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap">
                         <span className="text-main font-black">
-                          {payment.currency === 'INR' ? '₹' : '$'}{payment.amount}
+                          {formatAmount(payment)}
                         </span>
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap">
                         <span className="text-xs font-bold text-muted uppercase tracking-tighter">
-                          {payment.paymentMethod || 'RAZORPAY'}
+                          {payment.paymentMethod || '—'}
                         </span>
                       </td>
                       <td className="px-6 py-5 whitespace-nowrap">

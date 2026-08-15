@@ -15,6 +15,7 @@ api.interceptors.request.use(
       '/api/auth/register',
       '/api/auth/login',
       '/api/auth/verify-email',
+      '/api/auth/resend-verification',
       '/api/auth/forgot-password',
       '/api/auth/reset-password'
     ];
@@ -27,6 +28,11 @@ api.interceptors.request.use(
     const token = localStorage.getItem('token');
     if (isPublicAuthEndpoint) {
       config.skipAuthRedirect = true;
+      // Defensive cleanup prevents a stale default/header from leaking into public auth APIs.
+      if (config.headers) {
+        delete config.headers.Authorization;
+        delete config.headers.authorization;
+      }
     }
     if (token && !isPublicAuthEndpoint) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -49,7 +55,8 @@ api.interceptors.response.use(
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login';
+          window.history.replaceState({}, '', '/login');
+          window.dispatchEvent(new PopStateEvent('popstate'));
         }
       }
       // 403 errors are handled by components or protected routes
