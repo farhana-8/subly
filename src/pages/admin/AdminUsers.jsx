@@ -88,7 +88,8 @@ const AdminUsers = () => {
                 <tr className="border-b border-main bg-main/[0.02]">
                   <th className="px-8 py-6 text-xs font-black text-muted uppercase tracking-widest">User</th>
                   <th className="px-8 py-6 text-xs font-black text-muted uppercase tracking-widest">Role</th>
-                  <th className="px-8 py-6 text-xs font-black text-muted uppercase tracking-widest">Status</th>
+                  <th className="px-8 py-6 text-xs font-black text-muted uppercase tracking-widest">Email Verification</th>
+                  <th className="px-8 py-6 text-xs font-black text-muted uppercase tracking-widest">Account Status</th>
                   <th className="px-8 py-6 text-xs font-black text-muted uppercase tracking-widest">Joined</th>
                 </tr>
               </thead>
@@ -129,6 +130,14 @@ const AdminUsers = () => {
                       }`}>
                         {user.emailVerified ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
                         {user.emailVerified ? 'Verified' : 'Pending'}
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black border uppercase tracking-widest ${
+                        user.status === 'ACTIVE' ? 'bg-accent-lime/10 text-accent-lime border-accent-lime/20' : 'bg-bg-deep border-main text-muted'
+                      }`}>
+                        {user.status === 'ACTIVE' ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                        {user.status || 'Unknown'}
                       </div>
                     </td>
                     <td className="px-8 py-6 text-sm font-bold text-muted">

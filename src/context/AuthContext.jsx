@@ -90,9 +90,10 @@ export const AuthProvider = ({ children }) => {
 
   const refreshUser = async () => {
     try {
-      const response = await api.get('/api/users/me');
-      setUser(response.data);
-      localStorage.setItem('user', JSON.stringify(response.data));
+      const response = await api.get('/api/auth/me', { skipAuthRedirect: true });
+      const profile = response.data?.data || response.data;
+      setUser(profile);
+      localStorage.setItem('user', JSON.stringify(profile));
     } catch (error) {
       console.error('Failed to refresh user:', error);
     }

@@ -47,10 +47,24 @@ const AdminPayments = () => {
     }
   };
 
-  const filteredPayments = payments.filter(payment => 
-    payment.gatewayPaymentId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    payment.userEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    payment.userName?.toLowerCase().includes(searchTerm.toLowerCase())
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredPayments = payments.filter((payment) => {
+    if (!normalizedSearch) return true;
+    return [payment.gatewayPaymentId, payment.transactionId, payment.userEmail]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(normalizedSearch));
+  });
+
+  const formatAmount = (payment) => {
+    if (payment.amount === null || payment.amount === undefined) return '—';
+    if (payment.currency === 'INR') return `₹${payment.amount}`;
+    return `${payment.currency ? `${payment.currency} ` : ''}${payment.amount}`;
+  };
+
+  const isRefundable = (payment) => (
+    ['SUCCESS', 'CAPTURED'].includes(payment.status) &&
+    payment.status !== 'REFUNDED' &&
+    !['PENDING', 'SUCCESS'].includes(payment.refundStatus)
   );
 
   const statusColors = {
@@ -76,9 +90,9 @@ const AdminPayments = () => {
         <div className="flex items-center gap-3">
           <div className="relative w-full md:w-80">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
-            <input 
-              type="text"
-              placeholder="Search by ID, name, or email..."
+              <input 
+                type="text"
+                placeholder="Search by transaction ID or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-12 pr-4 py-3 bg-bg-card border border-main rounded-2xl text-main focus:outline-none focus:border-primary-violet transition-all shadow-sm"
@@ -129,17 +143,16 @@ const AdminPayments = () => {
                   >
                     <td className="px-8 py-6">
                       <div className="text-main font-black flex items-center gap-2">
-                        {payment.gatewayPaymentId || payment.transactionId || 'N/A'}
+                        {payment.gatewayPaymentId || payment.transactionId || '—'}
                         <ExternalLink className="h-3 w-3 text-muted opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" />
                       </div>
-                      <div className="text-[10px] text-muted font-bold uppercase tracking-wider">{payment.paymentMethod || 'RAZORPAY'}</div>
+                      <div className="text-[10px] text-muted font-bold uppercase tracking-wider">{payment.paymentMethod || payment.gateway || '—'}</div>
                     </td>
                     <td className="px-8 py-6">
-                      <div className="text-main font-bold">{payment.userName || 'Unknown'}</div>
-                      <div className="text-xs text-muted font-medium">{payment.userEmail || 'N/A'}</div>
+                      <div className="text-main font-bold">{payment.userEmail || '—'}</div>
                     </td>
                     <td className="px-8 py-6 text-right">
-                      <div className="text-main font-black">{payment.currency === 'INR' ? '₹' : '$'}{payment.amount}</div>
+                      <div className="text-main font-black">{formatAmount(payment)}</div>
                     </td>
                     <td className="px-8 py-6">
                       <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black border uppercase tracking-widest ${
@@ -147,17 +160,23 @@ const AdminPayments = () => {
                       }`}>
                         {payment.status === 'SUCCESS' || payment.status === 'CAPTURED' ? <CheckCircle2 className="h-3 w-3" /> : 
                          payment.status === 'FAILED' ? <XCircle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
-                        {payment.status}
+                        {payment.status || 'Unknown'}
                       </div>
+                      {payment.refundStatus && (
+                        <div className="mt-2 text-[10px] font-black uppercase tracking-widest text-muted">
+                          Refund: {payment.refundStatus}
+                        </div>
+                      )}
                     </td>
                     <td className="px-8 py-6 text-sm font-bold text-muted">
                       {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : 'N/A'}
                     </td>
                     <td className="px-8 py-6 text-right">
-                      {(payment.status === 'SUCCESS' || payment.status === 'CAPTURED') && (
+                      {isRefundable(payment) && (
                         <button 
                           onClick={() => setConfirmRefund({ open: true, id: payment.id })}
-                          className="p-2 bg-bg-deep border border-main rounded-xl text-muted hover:text-primary-violet transition-all group/btn shadow-sm"
+                          disabled={actionLoading}
+                          className="p-2 bg-bg-deep border border-main rounded-xl text-muted hover:text-primary-violet transition-all group/btn shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
                           title="Refund Payment"
                         >
                           <RotateCcw className="h-4 w-4 group-hover/btn:rotate-[-45deg] transition-transform" />

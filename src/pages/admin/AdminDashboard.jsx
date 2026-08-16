@@ -7,42 +7,52 @@ import { useToast } from '../../context/ToastContext';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalRevenue: 0,
-    totalPayments: 0,
-    activePlans: 0,
-    revenueCurrency: 'INR'
+    totalUsers: null,
+    totalRevenue: null,
+    totalPayments: null,
+    activePlans: null,
+    revenueCurrency: null
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const { addToast } = useToast();
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const [usersRes, revenueRes, paymentsRes, plansRes] = await Promise.all([
+        setError('');
+        const results = await Promise.allSettled([
           adminService.getAllUsers(),
           adminService.getRevenue(),
           adminService.getAllPayments(),
           adminService.getAllPlans()
         ]);
-
-        // Robust parsing for admin stats
-        const users = usersRes.data?.data || usersRes.data || [];
-        const payments = paymentsRes.data?.data || paymentsRes.data || [];
-        const plans = plansRes.data?.data || plansRes.data || [];
-        const revenuePayload = revenueRes.data?.data || revenueRes.data || {};
-        const revenue = typeof revenuePayload === 'number' ? revenuePayload : revenuePayload.totalRevenue;
+        const [usersResult, revenueResult, paymentsResult, plansResult] = results;
+        const readPayload = (result) => result.status === 'fulfilled'
+          ? (result.value.data?.data || result.value.data)
+          : null;
+        const users = readPayload(usersResult);
+        const payments = readPayload(paymentsResult);
+        const plans = readPayload(plansResult);
+        const revenuePayload = readPayload(revenueResult);
+        const revenue = typeof revenuePayload === 'number' ? revenuePayload : revenuePayload?.totalRevenue;
+        const partialFailure = results.some((result) => result.status === 'rejected');
 
         setStats({
-          totalUsers: Array.isArray(users) ? users.length : 0,
-          totalRevenue: Number(revenue || 0),
-          totalPayments: Array.isArray(payments) ? payments.length : 0,
-          activePlans: Array.isArray(plans) ? plans.filter(p => p.active).length : 0,
-          revenueCurrency: typeof revenuePayload === 'object' ? (revenuePayload.currency || 'INR') : 'INR'
+          totalUsers: Array.isArray(users) ? users.length : null,
+          totalRevenue: revenue === null || revenue === undefined ? null : Number(revenue),
+          totalPayments: Array.isArray(payments) ? payments.length : null,
+          activePlans: Array.isArray(plans) ? plans.filter((plan) => plan.active).length : null,
+          revenueCurrency: revenuePayload?.currency || null
         });
-      } catch (error) {
-        console.error('Failed to fetch admin stats:', error);
+        if (partialFailure) {
+          setError('Some dashboard metrics could not be loaded. The unavailable values are not estimated.');
+          addToast('Some dashboard metrics could not be loaded', 'error');
+        }
+      } catch (fetchError) {
+        console.error('Failed to fetch admin stats:', fetchError);
+        setError('Dashboard metrics are unavailable. Retry to request the live backend data again.');
         addToast('Failed to load dashboard metrics', 'error');
       } finally {
         setLoading(false);
@@ -52,28 +62,33 @@ const AdminDashboard = () => {
     fetchStats();
   }, []);
 
+  const displayCount = (value) => value === null || value === undefined ? '—' : value.toLocaleString();
+  const displayRevenue = stats.totalRevenue === null || stats.totalRevenue === undefined
+    ? '—'
+    : `${stats.revenueCurrency === 'INR' ? '₹' : stats.revenueCurrency ? `${stats.revenueCurrency} ` : ''}${stats.totalRevenue.toLocaleString()}`;
+
   const statCards = [
     { 
       name: 'Total Users', 
-      value: stats.totalUsers.toLocaleString(), 
+      value: displayCount(stats.totalUsers), 
       icon: Users, 
       color: 'from-primary-violet to-primary-purple'
     },
     { 
       name: 'Total Revenue', 
-      value: `${stats.revenueCurrency === 'INR' ? '₹' : stats.revenueCurrency ? `${stats.revenueCurrency} ` : ''}${stats.totalRevenue.toLocaleString()}`, 
+      value: displayRevenue, 
       icon: CreditCard, 
       color: 'from-accent-lime to-emerald-500'
     },
     { 
       name: 'Total Payments', 
-      value: stats.totalPayments.toLocaleString(), 
+      value: displayCount(stats.totalPayments), 
       icon: Activity, 
       color: 'from-primary-magenta to-accent-coral'
     },
     { 
       name: 'Active Plans', 
-      value: stats.activePlans.toLocaleString(), 
+      value: displayCount(stats.activePlans), 
       icon: Zap, 
       color: 'from-accent-cyan to-primary-violet'
     },
@@ -91,6 +106,12 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-8">
+      {error && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-accent-orange/30 bg-accent-orange/10 p-4 text-sm text-main sm:flex-row sm:items-center sm:justify-between">
+          <span>{error}</span>
+          <button onClick={fetchStats} className="rounded-xl bg-primary-violet px-4 py-2 font-black text-white hover:bg-primary-purple">Retry</button>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((item, idx) => (
           <motion.div
@@ -129,15 +150,15 @@ const AdminDashboard = () => {
           <div className="space-y-3">
             <div className="flex items-center justify-between rounded-2xl border border-main bg-bg-deep p-4">
               <span className="text-sm font-bold text-main">User records loaded</span>
-              <span className="text-sm font-black text-primary-violet">{stats.totalUsers}</span>
+              <span className="text-sm font-black text-primary-violet">{displayCount(stats.totalUsers)}</span>
             </div>
             <div className="flex items-center justify-between rounded-2xl border border-main bg-bg-deep p-4">
               <span className="text-sm font-bold text-main">Payment records loaded</span>
-              <span className="text-sm font-black text-primary-violet">{stats.totalPayments}</span>
+              <span className="text-sm font-black text-primary-violet">{displayCount(stats.totalPayments)}</span>
             </div>
             <div className="flex items-center justify-between rounded-2xl border border-main bg-bg-deep p-4">
               <span className="text-sm font-bold text-main">Active plans loaded</span>
-              <span className="text-sm font-black text-primary-violet">{stats.activePlans}</span>
+              <span className="text-sm font-black text-primary-violet">{displayCount(stats.activePlans)}</span>
             </div>
           </div>
         </div>

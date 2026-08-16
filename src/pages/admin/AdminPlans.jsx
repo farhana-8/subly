@@ -12,6 +12,8 @@ const AdminPlans = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState({ open: false, id: null });
+  const [actionLoading, setActionLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -25,12 +27,14 @@ const AdminPlans = () => {
   const fetchPlans = async () => {
     try {
       setLoading(true);
+      setError('');
       const response = await adminService.getAllPlans();
       // Robust parsing for admin plans list
       const data = response.data?.data || response.data || [];
       setPlans(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('Failed to fetch plans:', error);
+    } catch (fetchError) {
+      console.error('Failed to fetch plans:', fetchError);
+      setError('Plans are unavailable. Retry to request the live backend data again.');
       addToast('Failed to load plans', 'error');
     } finally {
       setLoading(false);
@@ -66,11 +70,20 @@ const AdminPlans = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (actionLoading) return;
+
+    const numericPrice = Number(formData.price);
+    if (isNaN(numericPrice) || numericPrice < 0) {
+      addToast('Please enter a valid price', 'error');
+      return;
+    }
+
     try {
+      setActionLoading(true);
       const payload = {
         name: formData.name.trim(),
         description: formData.description.trim(),
-        price: Number(formData.price),
+        price: numericPrice,
         billingInterval: formData.billingInterval,
         active: formData.active
       };
@@ -86,17 +99,23 @@ const AdminPlans = () => {
       fetchPlans();
     } catch (error) {
       addToast(error.response?.data?.message || 'Failed to save plan', 'error');
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleDelete = async () => {
+    if (actionLoading) return;
     try {
+      setActionLoading(true);
       await adminService.deletePlan(confirmDelete.id);
-      addToast('Plan deleted successfully', 'success');
+      addToast('Plan deactivated successfully', 'success');
       setConfirmDelete({ open: false, id: null });
       fetchPlans();
     } catch (error) {
-      addToast(error.response?.data?.message || 'Failed to delete plan', 'error');
+      addToast(error.response?.data?.message || 'Failed to deactivate plan', 'error');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -249,11 +268,12 @@ const AdminPlans = () => {
             />
             <label htmlFor="active" className="text-sm font-bold text-main">Active and visible to users</label>
           </div>
-          <button 
+            <button 
             type="submit"
-            className="w-full py-4 bg-primary-violet text-white rounded-2xl font-black shadow-lg shadow-primary-violet/20 hover:bg-primary-purple transition-all"
+            disabled={actionLoading}
+            className="w-full py-4 bg-primary-violet text-white rounded-2xl font-black shadow-lg shadow-primary-violet/20 hover:bg-primary-purple transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {editingPlan ? 'Save Changes' : 'Create Plan'}
+            {actionLoading ? 'Saving...' : (editingPlan ? 'Save Changes' : 'Create Plan')}
           </button>
         </form>
       </Modal>
@@ -262,8 +282,9 @@ const AdminPlans = () => {
         isOpen={confirmDelete.open}
         onClose={() => setConfirmDelete({ open: false, id: null })}
         onConfirm={handleDelete}
-        title="Delete Plan?"
-        message="Are you sure you want to delete this plan? This action cannot be undone."
+        title="Deactivate Plan?"
+        message="Are you sure you want to deactivate this plan? Users will no longer be able to subscribe to it."
+        loading={actionLoading}
       />
     </div>
   );
