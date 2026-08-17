@@ -59,7 +59,7 @@ const Plans = () => {
     }
 
     let active = true;
-    subscriptionService.getCurrentSubscription()
+    subscriptionService.getCurrentSubscription({ skipAuthRedirect: true })
       .then((response) => {
         if (active) setCurrentSubscription(response.data?.data || response.data || null);
       })

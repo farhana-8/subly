@@ -151,17 +151,17 @@ const PublicLayout = () => {
             <div>
               <h4 className="text-main font-bold mb-4 text-sm">Company</h4>
               <ul className="space-y-2 text-sm text-muted">
-                <li><span className="hover:text-primary-violet transition-colors cursor-pointer">About</span></li>
-                <li><span className="hover:text-primary-violet transition-colors cursor-pointer">Careers</span></li>
-                <li><span className="hover:text-primary-violet transition-colors cursor-pointer">Blog</span></li>
+                <li><Link to="/features" className="hover:text-primary-violet transition-colors">About</Link></li>
+                <li><Link to="/features" className="hover:text-primary-violet transition-colors">Careers</Link></li>
+                <li><Link to="/features" className="hover:text-primary-violet transition-colors">Blog</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="text-main font-bold mb-4 text-sm">Support</h4>
               <ul className="space-y-2 text-sm text-muted">
-                <li><span className="hover:text-primary-violet transition-colors cursor-pointer">Help Center</span></li>
-                <li><span className="hover:text-primary-violet transition-colors cursor-pointer">API Docs</span></li>
-                <li><span className="hover:text-primary-violet transition-colors cursor-pointer">Status</span></li>
+                <li><Link to="/plans" className="hover:text-primary-violet transition-colors">Help Center</Link></li>
+                <li><Link to="/features" className="hover:text-primary-violet transition-colors">API Docs</Link></li>
+                <li><Link to="/dashboard" className="hover:text-primary-violet transition-colors">Status</Link></li>
               </ul>
             </div>
           </div>

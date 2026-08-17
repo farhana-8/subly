@@ -1,30 +1,29 @@
 import api from '../api/axios';
 
 const subscriptionService = {
-  getCurrentSubscription: async () => {
-    return await api.get('/api/subscriptions/current');
+  getCurrentSubscription: async (config = {}) => {
+    return await api.get('/api/subscriptions/current', config);
   },
   
-  getSubscriptionHistory: async () => {
-    return await api.get('/api/subscriptions');
+  getSubscriptionHistory: async (config = {}) => {
+    return await api.get('/api/subscriptions', config);
   },
 
-  createSubscription: async (planId) => {
-    return await api.post('/api/subscriptions', { planId });
+  createSubscription: async (planId, config = {}) => {
+    return await api.post('/api/subscriptions', { planId }, config);
   },
 
-  pauseSubscription: async (id) => {
-    return await api.post(`/api/subscriptions/${id}/pause`);
+  pauseSubscription: async (id, config = {}) => {
+    return await api.post(`/api/subscriptions/${id}/pause`, {}, config);
   },
 
-  resumeSubscription: async (id) => {
-    return await api.post(`/api/subscriptions/${id}/resume`);
+  resumeSubscription: async (id, config = {}) => {
+    return await api.post(`/api/subscriptions/${id}/resume`, {}, config);
   },
 
-  cancelSubscription: async (id) => {
-    return await api.post(`/api/subscriptions/${id}/cancel`);
+  cancelSubscription: async (id, config = {}) => {
+    return await api.post(`/api/subscriptions/${id}/cancel`, {}, config);
   },
-
 };
 
 export default subscriptionService;

@@ -2,10 +2,11 @@ import api from '../api/axios';
 
 const userService = {
   getCurrentUser: async () => {
-    // The backend exposes the authenticated profile at /api/auth/me.
     return await api.get('/api/auth/me', { skipAuthRedirect: true });
   },
+  updateProfile: async (data) => {
+    return await api.put('/api/auth/profile', data);
+  }
 };
 
 export default userService;
-

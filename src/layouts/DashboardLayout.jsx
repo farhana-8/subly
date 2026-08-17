@@ -89,7 +89,6 @@ const DashboardLayout = () => {
             </button>
             <Link to="/notifications" className="relative p-2 text-muted hover:text-primary-violet transition-colors">
               <Bell className="h-6 w-6" />
-              <div className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-primary-violet rounded-full border-2 border-bg-card"></div>
             </Link>
 
             <div className="hidden sm:flex flex-col items-end">
