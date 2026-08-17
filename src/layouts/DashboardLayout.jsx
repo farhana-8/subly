@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
+import notificationService from '../services/notificationService';
 import useAuth from '../hooks/useAuth';
 import { useTheme } from '../context/ThemeContext';
 import { Layout, LogOut, User, Home, CreditCard, Bell, Shield, Settings, Sun, Moon } from 'lucide-react';
@@ -9,6 +10,22 @@ const DashboardLayout = () => {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+  const [hasUnread, setHasUnread] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    notificationService.getUnreadNotifications({ skipAuthRedirect: true })
+      .then((res) => {
+        if (active) {
+          const list = res.data?.data || res.data || [];
+          setHasUnread(Array.isArray(list) ? list.length > 0 : Boolean(list));
+        }
+      })
+      .catch(() => {
+        if (active) setHasUnread(false);
+      });
+    return () => { active = false; };
+  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();
@@ -89,6 +106,9 @@ const DashboardLayout = () => {
             </button>
             <Link to="/notifications" className="relative p-2 text-muted hover:text-primary-violet transition-colors">
               <Bell className="h-6 w-6" />
+              {hasUnread && (
+                <span className="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-primary-magenta ring-2 ring-bg-card"></span>
+              )}
             </Link>
 
             <div className="hidden sm:flex flex-col items-end">

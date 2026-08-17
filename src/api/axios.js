@@ -10,7 +10,6 @@ const api = axios.create({
 // Request interceptor for attaching JWT
 api.interceptors.request.use(
   (config) => {
-    // List of public authentication endpoints that should NOT have the Authorization header
     const publicAuthEndpoints = [
       '/api/auth/register',
       '/api/auth/login',
@@ -20,20 +19,19 @@ api.interceptors.request.use(
       '/api/auth/reset-password'
     ];
 
-    // Check if the current request URL is in the public list
     const isPublicAuthEndpoint = publicAuthEndpoints.some(endpoint => 
       config.url && config.url.includes(endpoint)
     );
 
-    const token = localStorage.getItem('token');
     if (isPublicAuthEndpoint) {
       config.skipAuthRedirect = true;
-      // Defensive cleanup prevents a stale default/header from leaking into public auth APIs.
       if (config.headers) {
         delete config.headers.Authorization;
         delete config.headers.authorization;
       }
     }
+
+    const token = localStorage.getItem('token');
     if (token && !isPublicAuthEndpoint) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -49,9 +47,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response) {
+      // If endpoint is 404 for subscriptions/current, do not treat as auth failure
+      if (error.response.status === 404 && error.config?.url?.includes('/api/subscriptions/current')) {
+        return Promise.reject(error);
+      }
       if (error.response.status === 401 && !error.config?.skipAuthRedirect) {
-        // Only invalidate the session for an authenticated request that explicitly
-        // failed authentication. Public auth failures must not log out another session.
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         if (!window.location.pathname.includes('/login')) {
@@ -59,7 +59,6 @@ api.interceptors.response.use(
           window.dispatchEvent(new PopStateEvent('popstate'));
         }
       }
-      // 403 errors are handled by components or protected routes
     }
     return Promise.reject(error);
   }

@@ -168,8 +168,8 @@ const PublicLayout = () => {
           <div className="mt-12 pt-8 border-t border-main flex flex-col md:flex-row justify-between items-center text-xs text-muted">
             <p>&copy; {new Date().getFullYear()} Subly Inc. All rights reserved.</p>
             <div className="flex space-x-6 mt-4 md:mt-0">
-              <span className="hover:text-main cursor-pointer transition-colors">Privacy Policy</span>
-              <span className="hover:text-main cursor-pointer transition-colors">Terms of Service</span>
+              <Link to="/security" className="hover:text-main transition-colors">Privacy Policy</Link>
+              <Link to="/security" className="hover:text-main transition-colors">Terms of Service</Link>
             </div>
           </div>
         </div>
