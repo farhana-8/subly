@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, AlertCircle, RefreshCw, Layout, CheckCircle2, ArrowRight, ShieldAlert, Sparkles } from 'lucide-react';
+import { Check, AlertCircle, RefreshCw, Layout, CheckCircle2, ArrowRight, ShieldAlert, Sparkles, Zap, Crown, Rocket } from 'lucide-react';
 import planService from '../../services/planService';
 import subscriptionService from '../../services/subscriptionService';
 import paymentService from '../../services/paymentService';
@@ -28,7 +28,6 @@ const Plans = () => {
     setError(null);
     try {
       const response = await planService.getPlans();
-      // Robust parsing for different backend response structures
       let plansData = [];
       if (Array.isArray(response.data)) {
         plansData = response.data;
@@ -38,7 +37,8 @@ const Plans = () => {
         plansData = response.data.content;
       }
       
-      setPlans(plansData);
+      // Sort plans by price
+      setPlans(plansData.sort((a, b) => Number(a.price) - Number(b.price)));
     } catch (err) {
       console.error('Failed to fetch plans:', err);
       setError('Unable to load subscription plans. Please try again later.');
@@ -86,7 +86,6 @@ const Plans = () => {
 
     setProcessingPlanId(plan.id);
     try {
-      // 1. Create Subscription
       const subResponse = await subscriptionService.createSubscription(plan.id);
       const subscription = subResponse.data?.data || subResponse.data;
 
@@ -94,8 +93,6 @@ const Plans = () => {
         throw new Error('Failed to create subscription record.');
       }
 
-      // 2. Create a payment record and obtain the real Razorpay order ID.
-      // The backend requires a unique transactionId for every payment attempt.
       const transactionId = `SUB-${subscription.id}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
       const paymentResponse = await paymentService.createPayment({
         subscriptionId: subscription.id,
@@ -111,7 +108,6 @@ const Plans = () => {
         throw new Error('Razorpay is not configured for this account. Please contact support.');
       }
 
-      // 3. Load Razorpay Script
       const isLoaded = await loadRazorpay();
       if (!isLoaded) {
         setProcessingPlanId(null);
@@ -119,16 +115,14 @@ const Plans = () => {
         return;
       }
 
-      // 4. Open Razorpay Checkout
       const options = {
         key: paymentData.razorpayKeyId,
-        amount: Math.round(Number(paymentData.amount) * 100), // Razorpay expects paise for INR
+        amount: Math.round(Number(paymentData.amount) * 100),
         currency: paymentData.currency || 'INR',
         name: 'Subly',
         description: `Subscription for ${plan.name}`,
         order_id: paymentData.gatewayPaymentId,
         handler: async (response) => {
-          // 5. Verify Payment on Backend only after Razorpay returns all signature fields.
           try {
             if (!response?.razorpay_order_id || !response?.razorpay_payment_id || !response?.razorpay_signature) {
               throw new Error('Razorpay returned an incomplete payment response.');
@@ -140,7 +134,6 @@ const Plans = () => {
               razorpaySignature: response.razorpay_signature
             });
 
-            // Re-read both billing surfaces after verification so subsequent views use fresh backend state.
             const [subscriptionRefresh] = await Promise.all([
               subscriptionService.getCurrentSubscription(),
               paymentService.getPaymentHistory(),
@@ -183,13 +176,20 @@ const Plans = () => {
     }
   };
 
+  const getPlanIcon = (name) => {
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes('pro') || lowerName.includes('premium')) return <Crown className="h-6 w-6 text-primary-magenta" />;
+    if (lowerName.includes('business') || lowerName.includes('enterprise')) return <Rocket className="h-6 w-6 text-accent-coral" />;
+    return <Zap className="h-6 w-6 text-primary-violet" />;
+  };
+
   if (loading) {
     return (
       <div className="bg-bg-deep min-h-screen py-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[1, 2, 3].map(i => (
-              <div key={i} className="h-[500px] bg-bg-card border border-main rounded-[2.5rem] animate-pulse"></div>
+              <div key={i} className="h-[600px] bg-bg-card border border-main rounded-[2.5rem] animate-pulse"></div>
             ))}
           </div>
         </div>
@@ -199,38 +199,56 @@ const Plans = () => {
 
   return (
     <div className="bg-bg-deep min-h-screen py-24 sm:py-32 px-4 sm:px-6 lg:px-8 relative overflow-hidden transition-colors duration-300">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] pointer-events-none overflow-hidden opacity-20">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary-violet rounded-full blur-[120px] animate-pulse"></div>
+      {/* Dynamic Background */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[800px] pointer-events-none overflow-hidden opacity-20">
+        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-primary-violet rounded-full blur-[150px] animate-pulse"></div>
+        <div className="absolute bottom-[10%] right-[-10%] w-[40%] h-[40%] bg-primary-magenta rounded-full blur-[120px] opacity-50"></div>
       </div>
 
       <div className="max-w-7xl mx-auto relative z-10">
-        <div className="text-center mb-20">
+        <div className="text-center mb-24">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-violet/10 border border-primary-violet/20 text-primary-violet text-xs font-black uppercase tracking-widest mb-8"
+          >
+            <Sparkles className="h-3 w-3" />
+            Pricing Plans
+          </motion.div>
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-7xl font-black tracking-tight text-main mb-6 leading-tight"
+            className="text-5xl md:text-8xl font-black tracking-tighter text-main mb-8 leading-[0.9]"
           >
-            Ready to scale? <br />
+            Scale your <br />
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary-violet via-primary-magenta to-accent-coral">
-              Pick your plan.
+              billing engine.
             </span>
           </motion.h1>
-          <p className="max-w-2xl mx-auto text-lg text-muted">Join hundreds of teams managing their subscriptions with Subly.</p>
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="max-w-2xl mx-auto text-xl text-muted font-medium"
+          >
+            Simple, transparent pricing for teams of all sizes. <br className="hidden md:block" />
+            No hidden fees, no complicated contracts.
+          </motion.p>
         </div>
 
         {error ? (
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="max-w-xl mx-auto p-12 bg-bg-card border border-main rounded-[2.5rem] text-center shadow-xl relative overflow-hidden"
+            className="max-w-xl mx-auto p-12 bg-bg-card border border-main rounded-[3rem] text-center shadow-2xl relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
-            <ShieldAlert className="h-16 w-16 text-red-500/50 mx-auto mb-6 relative z-10" />
-            <h3 className="text-xl font-black text-main mb-2 relative z-10">Service Temporarily Unavailable</h3>
-            <p className="text-muted mb-8 relative z-10">{error}</p>
+            <ShieldAlert className="h-20 w-20 text-red-500/30 mx-auto mb-8 relative z-10" />
+            <h3 className="text-2xl font-black text-main mb-4 relative z-10 tracking-tight">Something went wrong</h3>
+            <p className="text-muted mb-10 relative z-10 text-lg leading-relaxed">{error}</p>
             <button 
               onClick={fetchPlans}
-              className="px-8 py-4 bg-primary-violet text-white rounded-2xl font-black shadow-lg hover:bg-primary-purple transition-all flex items-center gap-2 mx-auto relative z-10"
+              className="px-10 py-5 bg-primary-violet text-white rounded-2xl font-black shadow-xl shadow-primary-violet/20 hover:bg-primary-purple transition-all flex items-center gap-3 mx-auto relative z-10 active:scale-95"
             >
               <RefreshCw className="h-5 w-5" />
               Try Again
@@ -240,81 +258,111 @@ const Plans = () => {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="max-w-2xl mx-auto p-12 md:p-20 bg-bg-card border border-main rounded-[2.5rem] text-center shadow-xl relative overflow-hidden"
+            className="max-w-3xl mx-auto p-16 md:p-24 bg-bg-card border border-main rounded-[3rem] text-center shadow-2xl relative overflow-hidden"
           >
-            <div className="absolute top-0 left-0 w-64 h-64 bg-primary-violet/5 rounded-full blur-[80px] -ml-32 -mt-32"></div>
+            <div className="absolute top-0 left-0 w-64 h-64 bg-primary-violet/5 rounded-full blur-[100px] -ml-32 -mt-32"></div>
             <div className="relative z-10">
-              <Sparkles className="h-20 w-20 text-primary-violet/30 mx-auto mb-6" />
-              <h3 className="text-3xl font-black text-main mb-4 tracking-tighter">No plans available right now</h3>
-              <p className="text-muted mb-10 text-lg leading-relaxed">
-                Subscription plans will appear here once they are available. <br className="hidden md:block" />
-                We are currently refining our offerings to serve you better.
+              <Sparkles className="h-24 w-24 text-primary-violet/20 mx-auto mb-10" />
+              <h3 className="text-4xl font-black text-main mb-6 tracking-tighter">New plans arriving soon</h3>
+              <p className="text-muted mb-12 text-xl leading-relaxed font-medium">
+                We're currently tailoring our plans to provide the best value. <br className="hidden md:block" />
+                Check back in a few days or contact our support team.
               </p>
               <button 
                 onClick={() => navigate('/')}
-                className="px-10 py-5 bg-bg-deep border border-main text-main rounded-2xl font-black text-lg hover:bg-main/5 transition-all shadow-lg"
+                className="px-12 py-6 bg-bg-deep border border-main text-main rounded-2xl font-black text-xl hover:bg-main/5 transition-all shadow-xl active:scale-95"
               >
                 Back to Home
               </button>
             </div>
           </motion.div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {plans.map((plan) => (
-              <motion.div
-                key={plan.id}
-                whileHover={{ y: -10 }}
-                className="relative flex flex-col p-8 md:p-10 rounded-[2.5rem] bg-bg-card border border-main hover:border-primary-violet/30 transition-all shadow-xl group"
-              >
-                <div className="mb-8">
-                  <h3 className="text-2xl font-black text-main mb-2">{plan.name}</h3>
-                  <p className="text-muted text-sm leading-relaxed">{plan.description || 'Premium billing infrastructure.'}</p>
-                </div>
-
-                <div className="mb-8">
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-5xl font-black text-main">
-                      ₹{plan.price}
-                    </span>
-                    <span className="text-muted font-bold">/{plan.billingInterval?.toLowerCase() || 'month'}</span>
-                  </div>
-                </div>
-
-                <div className="mb-10 flex-grow">
-                  {Array.isArray(plan.features) && plan.features.length > 0 ? (
-                    <ul className="space-y-4">
-                      {plan.features.map((feature, index) => (
-                        <li key={`${plan.id}-feature-${index}`} className="flex items-center gap-3 text-muted text-sm font-medium">
-                          <Check className="h-4 w-4 text-primary-violet" /> {feature}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm leading-relaxed text-muted">Feature details are not provided for this plan.</p>
-                  )}
-                </div>
-
-                <button
-                  onClick={() => handleSubscribe(plan)}
-                  disabled={processingPlanId !== null}
-                  className={`w-full py-4 rounded-2xl font-black text-center transition-all flex items-center justify-center gap-2 ${
-                    processingPlanId !== null ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.02]'
-                  } ${
-                    plan.name?.toLowerCase().includes('pro') 
-                      ? 'bg-gradient-to-r from-primary-violet to-primary-purple text-white shadow-lg' 
-                      : 'bg-bg-deep border border-main text-main hover:bg-main/5'
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            {plans.map((plan, index) => {
+              const isPro = plan.name?.toLowerCase().includes('pro') || plan.name?.toLowerCase().includes('premium');
+              return (
+                <motion.div
+                  key={plan.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  whileHover={{ y: -12 }}
+                  className={`relative flex flex-col p-10 md:p-12 rounded-[3rem] transition-all shadow-2xl group ${
+                    isPro 
+                      ? 'bg-bg-card border-2 border-primary-violet shadow-primary-violet/10' 
+                      : 'bg-bg-card border border-main hover:border-primary-violet/40'
                   }`}
                 >
-                  {processingPlanId === plan.id ? (
-                    <RefreshCw className="h-5 w-5 animate-spin" />
-                  ) : currentSubscription && ['ACTIVE', 'PAUSED'].includes(currentSubscription.status) ? (
-                    'Manage Current Subscription'
-                  ) : (
-                    isAuthenticated ? 'Subscribe Now' : 'Login to Subscribe'
+                  {isPro && (
+                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary-violet to-primary-magenta text-white text-[10px] font-black uppercase tracking-[0.2em] px-6 py-2 rounded-full shadow-lg">
+                      Most Popular
+                    </div>
                   )}
-                </button>
-              </motion.div>
-            ))}
+                  
+                  <div className="mb-10 flex justify-between items-start">
+                    <div>
+                      <h3 className="text-3xl font-black text-main mb-3 tracking-tight">{plan.name}</h3>
+                      <p className="text-muted text-sm font-medium leading-relaxed max-w-[200px]">
+                        {plan.description || 'Enterprise-grade billing infrastructure for your scaling business.'}
+                      </p>
+                    </div>
+                    <div className={`p-4 rounded-2xl ${isPro ? 'bg-primary-violet/10' : 'bg-main/5'}`}>
+                      {getPlanIcon(plan.name)}
+                    </div>
+                  </div>
+
+                  <div className="mb-10">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-6xl font-black text-main tracking-tighter">
+                        ₹{plan.price}
+                      </span>
+                      <span className="text-muted font-bold text-lg">/{plan.billingInterval?.toLowerCase() || 'month'}</span>
+                    </div>
+                  </div>
+
+                  <div className="mb-12 flex-grow">
+                    <div className="text-xs font-black text-muted uppercase tracking-widest mb-6">What's included</div>
+                    {Array.isArray(plan.features) && plan.features.length > 0 ? (
+                      <ul className="space-y-5">
+                        {plan.features.map((feature, idx) => (
+                          <li key={`${plan.id}-feature-${idx}`} className="flex items-start gap-4 text-main/80 text-sm font-bold">
+                            <div className="mt-1 bg-accent-lime/10 p-0.5 rounded-full">
+                              <Check className="h-3.5 w-3.5 text-accent-lime" />
+                            </div>
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm leading-relaxed text-muted font-medium italic">Standard platform features included.</p>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => handleSubscribe(plan)}
+                    disabled={processingPlanId !== null}
+                    className={`w-full py-5 rounded-2xl font-black text-lg transition-all flex items-center justify-center gap-3 shadow-xl active:scale-[0.97] ${
+                      processingPlanId !== null ? 'opacity-70 cursor-not-allowed' : ''
+                    } ${
+                      isPro 
+                        ? 'bg-gradient-to-r from-primary-violet to-primary-purple text-white hover:shadow-primary-violet/30' 
+                        : 'bg-bg-deep border border-main text-main hover:bg-main/5'
+                    }`}
+                  >
+                    {processingPlanId === plan.id ? (
+                      <RefreshCw className="h-6 w-6 animate-spin" />
+                    ) : currentSubscription && ['ACTIVE', 'PAUSED'].includes(currentSubscription.status) ? (
+                      'Current Plan'
+                    ) : (
+                      <>
+                        {isAuthenticated ? 'Get Started' : 'Sign Up Now'}
+                        <ArrowRight className="h-5 w-5" />
+                      </>
+                    )}
+                  </button>
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -327,19 +375,26 @@ const Plans = () => {
         }}
         title="Payment Successful!"
       >
-        <div className="text-center py-4">
-          <div className="w-20 h-20 bg-accent-lime/20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 className="h-10 w-10 text-accent-lime" />
-          </div>
-          <p className="text-muted mb-8">
-            Congratulations! You are now subscribed to the <span className="text-main font-bold">{successModal.planName}</span>.
-            Your dashboard is now fully unlocked.
+        <div className="text-center py-8">
+          <motion.div 
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', damping: 12 }}
+            className="w-24 h-24 bg-accent-lime/20 rounded-full flex items-center justify-center mx-auto mb-8"
+          >
+            <CheckCircle2 className="h-12 w-12 text-accent-lime" />
+          </motion.div>
+          <h3 className="text-3xl font-black text-main mb-4 tracking-tight">You're all set!</h3>
+          <p className="text-muted mb-12 text-lg font-medium leading-relaxed">
+            Congratulations! You are now subscribed to <span className="text-main font-bold">{successModal.planName}</span>.
+            Your billing dashboard is now active.
           </p>
           <button 
             onClick={() => navigate('/dashboard')}
-            className="w-full py-4 bg-primary-violet text-white rounded-2xl font-black flex items-center justify-center gap-2"
+            className="w-full py-5 bg-primary-violet text-white rounded-2xl font-black text-lg flex items-center justify-center gap-3 shadow-xl shadow-primary-violet/20 hover:bg-primary-purple transition-all"
           >
-            Go to Dashboard <ArrowRight className="h-5 w-5" />
+            Go to Dashboard 
+            <ArrowRight className="h-5 w-5" />
           </button>
         </div>
       </Modal>

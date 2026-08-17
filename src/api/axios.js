@@ -42,16 +42,23 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor for handling 401/403 errors
+// Response interceptor: NEVER force logout on background data fetches
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response) {
-      // If endpoint is 404 for subscriptions/current, do not treat as auth failure
-      if (error.response.status === 404 && error.config?.url?.includes('/api/subscriptions/current')) {
-        return Promise.reject(error);
-      }
-      if (error.response.status === 401 && !error.config?.skipAuthRedirect && !error.config?.url?.includes('/api/subscriptions') && !error.config?.url?.includes('/api/payments')) {
+      const url = error.config?.url || '';
+      // Explicitly exempt all dashboard/user/subscription/payment/notification endpoints from automatic logout
+      const isExempt = 
+        url.includes('/api/subscriptions') ||
+        url.includes('/api/payments') ||
+        url.includes('/api/notifications') ||
+        url.includes('/api/auth/me') ||
+        url.includes('/api/auth/profile') ||
+        url.includes('/api/users') ||
+        error.config?.skipAuthRedirect;
+
+      if (error.response.status === 401 && !isExempt) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         if (!window.location.pathname.includes('/login')) {

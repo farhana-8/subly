@@ -26,28 +26,35 @@
   --border-color: rgba(255, 255, 255, 0.1);
   
   overscroll-behavior: none;
+  overscroll-behavior-y: none;
 }
 
 :root.light {
-  --bg-deep: #F9FAFB;
-  --bg-dark: #F3F4F6;
+  --bg-deep: #F8FAFC;
+  --bg-dark: #F1F5F9;
   --bg-card: #FFFFFF;
-  --text-main: #111827;
-  --text-muted: #4B5563;
-  --border-color: rgba(0, 0, 0, 0.08);
+  --text-main: #0F172A;
+  --text-muted: #64748B;
+  --border-color: rgba(0, 0, 0, 0.06);
 }
 
-body {
+html, body {
   margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
   overscroll-behavior: none;
+  overscroll-behavior-y: none;
   background-color: var(--bg-deep);
   color: var(--text-main);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
 }
 
-html {
-  overscroll-behavior: none;
+/* Force no bounce on scrollable containers */
+* {
+  overscroll-behavior: none !important;
 }
 
 /* Custom Utilities for Theme-aware colors */
@@ -71,4 +78,11 @@ html {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* Glassmorphism for cards in light mode */
+.light .bg-bg-card {
+  backdrop-filter: blur(16px);
+  background-color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(0, 0, 0, 0.05);
 }
