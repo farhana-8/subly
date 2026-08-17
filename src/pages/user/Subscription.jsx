@@ -16,7 +16,7 @@ const Subscription = () => {
   const fetchSubscription = async () => {
     try {
       setLoading(true);
-      const response = await subscriptionService.getCurrentSubscription();
+      const response = await subscriptionService.getCurrentSubscription({ skipAuthRedirect: true });
       // Robust parsing for different backend response structures
       const data = response.data?.data || response.data;
       setSubscription(data || null);

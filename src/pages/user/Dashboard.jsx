@@ -24,8 +24,8 @@ const Dashboard = () => {
     setLoading(true);
     setDataError(null);
     const [subscriptionResult, notificationResult] = await Promise.allSettled([
-      subscriptionService.getCurrentSubscription(),
-      notificationService.getNotifications(),
+      subscriptionService.getCurrentSubscription({ skipAuthRedirect: true }),
+      notificationService.getNotifications({ skipAuthRedirect: true }),
     ]);
 
     if (subscriptionResult.status === 'fulfilled') {

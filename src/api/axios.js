@@ -51,7 +51,7 @@ api.interceptors.response.use(
       if (error.response.status === 404 && error.config?.url?.includes('/api/subscriptions/current')) {
         return Promise.reject(error);
       }
-      if (error.response.status === 401 && !error.config?.skipAuthRedirect) {
+      if (error.response.status === 401 && !error.config?.skipAuthRedirect && !error.config?.url?.includes('/api/subscriptions') && !error.config?.url?.includes('/api/payments')) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         if (!window.location.pathname.includes('/login')) {

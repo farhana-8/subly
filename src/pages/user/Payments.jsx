@@ -14,7 +14,7 @@ const Payments = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await paymentService.getPaymentHistory();
+      const response = await paymentService.getPaymentHistory({ skipAuthRedirect: true });
       // Robust parsing for different backend response structures
       const data = response.data?.data || response.data;
       setPayments(Array.isArray(data) ? data : []);
