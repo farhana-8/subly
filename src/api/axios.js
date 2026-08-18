@@ -50,6 +50,7 @@ api.interceptors.response.use(
       const url = error.config?.url || '';
       // Explicitly exempt all dashboard/user/subscription/payment/notification endpoints from automatic logout
       const isExempt = 
+        url.includes('/api/plans') ||
         url.includes('/api/subscriptions') ||
         url.includes('/api/payments') ||
         url.includes('/api/notifications') ||
