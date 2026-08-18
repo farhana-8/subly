@@ -5,9 +5,7 @@ const subscriptionService = {
     return await api.get('/api/subscriptions/current', config);
   },
   
-  getSubscriptionHistory: async (config = {}) => {
-    return await api.get('/api/subscriptions', config);
-  },
+
 
   createSubscription: async (planId, config = {}) => {
     return await api.post('/api/subscriptions', { planId }, config);
