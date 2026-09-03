@@ -250,7 +250,7 @@ const Landing = () => {
               Get Started Free
             </Link>
             <Link 
-              to="/plans" 
+              to="/login" 
               className="w-full sm:w-auto px-8 py-4 bg-bg-card text-main border border-main rounded-full font-bold text-lg hover:bg-main/5 transition-all flex items-center justify-center group"
             >
               Explore Plans
@@ -360,7 +360,7 @@ const Landing = () => {
                 Start Free Trial
               </Link>
               <Link 
-                to="/plans" 
+                to="/login" 
                 className="w-full sm:w-auto px-10 py-5 bg-transparent text-white border-2 border-white/20 rounded-full font-black text-lg hover:bg-white/10 transition-all"
               >
                 View Pricing

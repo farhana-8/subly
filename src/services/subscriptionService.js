@@ -7,8 +7,8 @@ const subscriptionService = {
   
 
 
-  createSubscription: async (planId, config = {}) => {
-    return await api.post('/api/subscriptions', { planId }, config);
+  createSubscription: async (planId, autoRenew = false, config = {}) => {
+    return await api.post('/api/subscriptions', { planId, autoRenew }, config);
   },
 
   pauseSubscription: async (id, config = {}) => {

@@ -14,6 +14,7 @@ import VerifyEmail from '../pages/public/VerifyEmail';
 import ForgotPassword from '../pages/public/ForgotPassword';
 import ResetPassword from '../pages/public/ResetPassword';
 import Plans from '../pages/public/Plans';
+import InfoPage, { ArticlePage } from '../pages/public/InfoPage';
 import Dashboard from '../pages/user/Dashboard';
 import Payments from '../pages/user/Payments';
 import Subscription from '../pages/user/Subscription';
@@ -34,10 +35,16 @@ const AppRoutes = () => {
       {/* Public Routes */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Landing />} />
-        <Route path="/features" element={<Landing />} />
-        <Route path="/pricing" element={<Plans />} />
-        <Route path="/plans" element={<Plans />} />
-        <Route path="/security" element={<Landing />} />
+        <Route path="/features" element={<InfoPage page="features" />} />
+        <Route path="/security" element={<InfoPage page="security" />} />
+        <Route path="/about" element={<InfoPage page="about" />} />
+        <Route path="/blog" element={<InfoPage page="blog" />} />
+        <Route path="/blog/:slug" element={<ArticlePage />} />
+        <Route path="/help" element={<InfoPage page="help" />} />
+        <Route path="/api-docs" element={<InfoPage page="api-docs" />} />
+        <Route path="/status" element={<InfoPage page="status" />} />
+        <Route path="/privacy" element={<InfoPage page="privacy" />} />
+        <Route path="/terms" element={<InfoPage page="terms" />} />
         <Route path="/login" element={<Login />} />
         <Route path="/admin/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -55,6 +62,8 @@ const AppRoutes = () => {
         }
       >
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/plans" element={<Plans />} />
+        <Route path="/pricing" element={<Plans />} />
         <Route path="/subscription" element={<Subscription />} />
         <Route path="/subscription/history" element={<Payments />} />
         <Route path="/payments" element={<Payments />} />

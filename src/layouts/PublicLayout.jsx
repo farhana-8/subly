@@ -36,7 +36,7 @@ const PublicLayout = () => {
                 <span className="text-2xl font-bold tracking-tight text-main uppercase">Subly</span>
               </Link>
               <div className="hidden md:ml-10 md:flex md:space-x-8">
-                {['Features', 'Pricing', 'Security'].map((item) => (
+                {['Features', 'Security'].map((item) => (
                   <Link 
                     key={item} 
                     to={`/${item.toLowerCase()}`} 
@@ -144,32 +144,30 @@ const PublicLayout = () => {
               <h4 className="text-main font-bold mb-4 text-sm">Product</h4>
               <ul className="space-y-2 text-sm text-muted">
                 <li><Link to="/features" className="hover:text-primary-violet transition-colors">Features</Link></li>
-                <li><Link to="/plans" className="hover:text-primary-violet transition-colors">Pricing</Link></li>
                 <li><Link to="/security" className="hover:text-primary-violet transition-colors">Security</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="text-main font-bold mb-4 text-sm">Company</h4>
               <ul className="space-y-2 text-sm text-muted">
-                <li><Link to="/features" className="hover:text-primary-violet transition-colors">About</Link></li>
-                <li><Link to="/features" className="hover:text-primary-violet transition-colors">Careers</Link></li>
-                <li><Link to="/features" className="hover:text-primary-violet transition-colors">Blog</Link></li>
+                <li><Link to="/about" className="hover:text-primary-violet transition-colors">About</Link></li>
+                <li><Link to="/blog" className="hover:text-primary-violet transition-colors">Blog</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="text-main font-bold mb-4 text-sm">Support</h4>
               <ul className="space-y-2 text-sm text-muted">
-                <li><Link to="/plans" className="hover:text-primary-violet transition-colors">Help Center</Link></li>
-                <li><Link to="/features" className="hover:text-primary-violet transition-colors">API Docs</Link></li>
-                <li><Link to="/dashboard" className="hover:text-primary-violet transition-colors">Status</Link></li>
+                <li><Link to="/help" className="hover:text-primary-violet transition-colors">Help Center</Link></li>
+                <li><Link to="/api-docs" className="hover:text-primary-violet transition-colors">API Docs</Link></li>
+                <li><Link to="/status" className="hover:text-primary-violet transition-colors">Status</Link></li>
               </ul>
             </div>
           </div>
           <div className="mt-12 pt-8 border-t border-main flex flex-col md:flex-row justify-between items-center text-xs text-muted">
             <p>&copy; {new Date().getFullYear()} Subly Inc. All rights reserved.</p>
             <div className="flex space-x-6 mt-4 md:mt-0">
-              <Link to="/security" className="hover:text-main transition-colors">Privacy Policy</Link>
-              <Link to="/security" className="hover:text-main transition-colors">Terms of Service</Link>
+              <Link to="/privacy" className="hover:text-main transition-colors">Privacy Policy</Link>
+              <Link to="/terms" className="hover:text-main transition-colors">Terms of Service</Link>
             </div>
           </div>
         </div>
