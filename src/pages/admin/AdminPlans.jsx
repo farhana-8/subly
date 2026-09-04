@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Zap, Plus, Edit2, Trash2, CheckCircle2, XCircle, DollarSign, Clock, RefreshCw } from 'lucide-react';
+import { Zap, Plus, Edit2, EyeOff, Eye, CheckCircle2, XCircle, DollarSign, Clock, RefreshCw } from 'lucide-react';
 import adminService from '../../services/adminService';
 import { useToast } from '../../context/ToastContext';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
@@ -8,10 +8,12 @@ import Modal from '../../components/common/Modal';
 
 const AdminPlans = () => {
   const [plans, setPlans] = useState([]);
+  const [hiddenPlans, setHiddenPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState({ open: false, id: null });
+  const [activeTab, setActiveTab] = useState('visible');
+  const [confirmAction, setConfirmAction] = useState({ open: false, type: 'hide', plan: null });
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
@@ -28,10 +30,14 @@ const AdminPlans = () => {
     try {
       setLoading(true);
       setError('');
-      const response = await adminService.getAllPlans();
-      // Robust parsing for admin plans list
-      const data = response.data?.data || response.data || [];
-      setPlans(Array.isArray(data) ? data : []);
+      const [activeResponse, hiddenResponse] = await Promise.all([
+        adminService.getAllPlans(),
+        adminService.getHiddenPlans()
+      ]);
+      const activeData = activeResponse.data?.data || activeResponse.data || [];
+      const hiddenData = hiddenResponse.data?.data || hiddenResponse.data || [];
+      setPlans(Array.isArray(activeData) ? activeData : []);
+      setHiddenPlans(Array.isArray(hiddenData) ? hiddenData : []);
     } catch (fetchError) {
       console.error('Failed to fetch plans:', fetchError);
       setError('Plans are unavailable. Retry to request the live backend data again.');
@@ -104,20 +110,34 @@ const AdminPlans = () => {
     }
   };
 
-  const handleDelete = async () => {
-    if (actionLoading) return;
+  const visiblePlans = Array.isArray(plans) ? plans : [];
+  const hiddenPlanList = Array.isArray(hiddenPlans) ? hiddenPlans : [];
+
+  const handlePlanVisibility = async () => {
+    if (actionLoading || !confirmAction.plan) return;
+
+    const plan = confirmAction.plan;
+    const shouldHide = confirmAction.type === 'hide';
+
     try {
       setActionLoading(true);
-      await adminService.deletePlan(confirmDelete.id);
-      addToast('Plan deactivated successfully', 'success');
-      setConfirmDelete({ open: false, id: null });
+      if (shouldHide) {
+        await adminService.hidePlan(plan.id);
+        addToast('Plan hidden successfully.', 'success');
+      } else {
+        await adminService.restorePlan(plan.id);
+        addToast('Plan restored successfully.', 'success');
+      }
+      setConfirmAction({ open: false, type: 'hide', plan: null });
       fetchPlans();
-    } catch (error) {
-      addToast(error.response?.data?.message || 'Failed to deactivate plan', 'error');
+    } catch (err) {
+      addToast(err.response?.data?.message || (shouldHide ? 'Failed to hide plan' : 'Failed to restore plan'), 'error');
     } finally {
       setActionLoading(false);
     }
   };
+
+  const currentPlans = activeTab === 'visible' ? visiblePlans : hiddenPlanList;
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -147,19 +167,38 @@ const AdminPlans = () => {
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-3">
+        <button
+          onClick={() => setActiveTab('visible')}
+          className={`rounded-full px-4 py-2 text-sm font-black transition-all ${activeTab === 'visible' ? 'bg-primary-violet text-white shadow-lg shadow-primary-violet/20' : 'border border-main bg-bg-card text-muted'}`}
+        >
+          Active Plans
+        </button>
+        <button
+          onClick={() => setActiveTab('hidden')}
+          className={`rounded-full px-4 py-2 text-sm font-black transition-all ${activeTab === 'hidden' ? 'bg-primary-violet text-white shadow-lg shadow-primary-violet/20' : 'border border-main bg-bg-card text-muted'}`}
+        >
+          Hidden Plans ({hiddenPlanList.length})
+        </button>
+      </div>
+
+      <div className="rounded-2xl border border-main bg-bg-card/70 p-4 text-sm text-muted">
+        Hiding a plan prevents new users from selecting it. Existing subscriptions are unaffected.
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {loading && plans.length === 0 ? (
+        {loading && currentPlans.length === 0 ? (
           [1, 2, 3].map(i => (
             <div key={i} className="h-64 bg-bg-card border border-main rounded-[2.5rem] animate-pulse"></div>
           ))
-        ) : plans.length === 0 ? (
+        ) : currentPlans.length === 0 ? (
           <div className="col-span-full p-20 text-center bg-bg-card border border-main rounded-[2.5rem] shadow-xl">
             <Zap className="h-16 w-16 text-muted/20 mx-auto mb-6" />
-            <h3 className="text-xl font-black text-main mb-2">No plans configured</h3>
-            <p className="text-muted">Start by creating your first subscription tier.</p>
+            <h3 className="text-xl font-black text-main mb-2">{activeTab === 'visible' ? 'No active plans configured' : 'No hidden plans'}</h3>
+            <p className="text-muted">{activeTab === 'visible' ? 'Start by creating your first subscription tier.' : 'Plans you hide will appear here.'}</p>
           </div>
         ) : (
-          plans.map((plan, idx) => (
+          currentPlans.map((plan, idx) => (
             <motion.div
               key={plan.id}
               initial={{ opacity: 0, y: 20 }}
@@ -171,14 +210,18 @@ const AdminPlans = () => {
                 <div className={`px-3 py-1 rounded-full text-[10px] font-black border uppercase tracking-widest ${
                   plan.active ? 'bg-accent-lime/10 text-accent-lime border-accent-lime/20' : 'bg-red-500/10 text-red-500 border-red-500/20'
                 }`}>
-                  {plan.active ? 'Active' : 'Inactive'}
+                  {plan.active ? 'Visible' : 'Hidden'}
                 </div>
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={() => handleOpenModal(plan)} className="p-2 bg-bg-deep border border-main rounded-xl text-muted hover:text-primary-violet transition-all">
                     <Edit2 className="h-4 w-4" />
                   </button>
-                  <button onClick={() => setConfirmDelete({ open: true, id: plan.id })} className="p-2 bg-bg-deep border border-main rounded-xl text-muted hover:text-red-500 transition-all">
-                    <Trash2 className="h-4 w-4" />
+                  <button
+                    onClick={() => setConfirmAction({ open: true, type: plan.active === false ? 'restore' : 'hide', plan })}
+                    className="p-2 bg-bg-deep border border-main rounded-xl text-muted hover:text-primary-violet transition-all"
+                    title={plan.active === false ? 'Restore plan' : 'Hide plan'}
+                  >
+                    {plan.active === false ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
@@ -279,12 +322,18 @@ const AdminPlans = () => {
       </Modal>
 
       <ConfirmDialog 
-        isOpen={confirmDelete.open}
-        onClose={() => setConfirmDelete({ open: false, id: null })}
-        onConfirm={handleDelete}
-        title="Deactivate Plan?"
-        message="Are you sure you want to deactivate this plan? Users will no longer be able to subscribe to it."
+        isOpen={confirmAction.open}
+        onClose={() => setConfirmAction({ open: false, type: 'hide', plan: null })}
+        onConfirm={handlePlanVisibility}
+        title={confirmAction.type === 'hide' ? 'Hide this plan?' : 'Restore this plan?'}
+        message={
+          confirmAction.type === 'hide'
+            ? 'This plan will no longer be visible to users or available for new subscriptions. Existing subscriptions using this plan will not be affected.'
+            : 'This plan will become visible to users again and can be selected for new subscriptions.'
+        }
         loading={actionLoading}
+        confirmText={confirmAction.type === 'hide' ? 'Hide Plan' : 'Restore Plan'}
+        type={confirmAction.type === 'hide' ? 'danger' : 'default'}
       />
     </div>
   );

@@ -10,11 +10,20 @@ const adminService = {
   getAllPlans: async () => {
     return await api.get('/api/admin/plans');
   },
+  getHiddenPlans: async () => {
+    return await api.get('/api/admin/plans/hidden');
+  },
   createPlan: async (planData) => {
     return await api.post('/api/admin/plans', planData);
   },
   updatePlan: async (id, planData) => {
     return await api.put(`/api/admin/plans/${id}`, planData);
+  },
+  hidePlan: async (id) => {
+    return await api.delete(`/api/admin/plans/${id}`);
+  },
+  restorePlan: async (id) => {
+    return await api.put(`/api/admin/plans/${id}/reactivate`);
   },
   deletePlan: async (id) => {
     return await api.delete(`/api/admin/plans/${id}`);

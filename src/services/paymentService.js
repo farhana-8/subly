@@ -27,6 +27,13 @@ const paymentService = {
 
   refundPayment: async (id, config = {}) => {
     return await api.post(`/api/payments/${id}/refund`, {}, config);
+  },
+
+  downloadInvoice: async (paymentId, config = {}) => {
+    return await api.get(`/api/payments/${paymentId}/invoice`, {
+      ...config,
+      responseType: 'blob'
+    });
   }
 };
 

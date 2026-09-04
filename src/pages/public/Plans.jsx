@@ -36,6 +36,8 @@ const Plans = () => {
       } else if (response.data?.content && Array.isArray(response.data.content)) {
         plansData = response.data.content;
       }
+
+      plansData = plansData.filter((plan) => plan.active !== false);
       
       // Sort plans by price
       setPlans(plansData.sort((a, b) => Number(a.price) - Number(b.price)));

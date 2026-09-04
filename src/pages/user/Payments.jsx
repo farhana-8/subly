@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CreditCard, Calendar, CheckCircle2, XCircle, Clock, RefreshCw, AlertCircle } from 'lucide-react';
+import { CreditCard, Calendar, CheckCircle2, XCircle, Clock, RefreshCw, AlertCircle, Download } from 'lucide-react';
 import paymentService from '../../services/paymentService';
 import { useToast } from '../../context/ToastContext';
 
@@ -8,6 +8,7 @@ const Payments = () => {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
   const { addToast } = useToast();
 
   const fetchPayments = async () => {
@@ -36,6 +37,44 @@ const Payments = () => {
     if (payment.amount === undefined || payment.amount === null) return '—';
     const prefix = payment.currency === 'INR' ? '₹' : payment.currency ? `${payment.currency} ` : '';
     return `${prefix}${payment.amount}`;
+  };
+
+  const handleDownloadInvoice = async (payment) => {
+    const paymentId = payment?.id || payment?.paymentId;
+    if (!paymentId || downloadingId === paymentId) return;
+
+    try {
+      setDownloadingId(paymentId);
+      const response = await paymentService.downloadInvoice(paymentId, { skipAuthRedirect: true });
+      const blob = new Blob([response.data], {
+        type: response.headers?.['content-type'] || 'application/pdf'
+      });
+
+      const contentDisposition = response.headers?.['content-disposition'] || '';
+      const match = contentDisposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i) || contentDisposition.match(/filename\*=(?:UTF-8'')?([^;]+)/i);
+      const filename = match ? decodeURIComponent((match[1] || match[0]).replace(/^UTF-8''/, '')) : `subly-invoice-${paymentId}.pdf`;
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      addToast('Invoice downloaded successfully.', 'success');
+    } catch (err) {
+      console.error('Failed to download invoice:', err);
+      addToast('Unable to download the invoice. Please try again.', 'error');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const canDownloadInvoice = (payment) => {
+    const statusOk = ['SUCCESS', 'CAPTURED'].includes(payment.status);
+    return statusOk && payment.invoiceAvailable !== false;
   };
 
   const getStatusIcon = (status) => {
@@ -130,6 +169,7 @@ const Payments = () => {
                     <th className="px-6 py-5 text-xs font-black text-muted uppercase tracking-widest">Amount</th>
                     <th className="px-6 py-5 text-xs font-black text-muted uppercase tracking-widest">Method</th>
                     <th className="px-6 py-5 text-xs font-black text-muted uppercase tracking-widest">Status</th>
+                    <th className="px-6 py-5 text-xs font-black text-muted uppercase tracking-widest text-right">Invoice</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-main/5">
@@ -165,6 +205,22 @@ const Payments = () => {
                           {getStatusIcon(payment.status)}
                           {payment.status}
                         </span>
+                      </td>
+                      <td className="px-6 py-5 text-right whitespace-nowrap">
+                        {canDownloadInvoice(payment) ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadInvoice(payment)}
+                            disabled={downloadingId === (payment.id || payment.paymentId)}
+                            className="inline-flex items-center gap-2 rounded-xl border border-main bg-bg-deep px-3 py-2 text-xs font-black text-main transition-all hover:border-primary-violet hover:text-primary-violet disabled:cursor-not-allowed disabled:opacity-50"
+                            title="Download invoice"
+                          >
+                            <Download className={`h-4 w-4 ${downloadingId === (payment.id || payment.paymentId) ? 'animate-pulse' : ''}`} />
+                            {downloadingId === (payment.id || payment.paymentId) ? 'Downloading...' : 'Download Invoice'}
+                          </button>
+                        ) : (
+                          <span className="text-xs font-bold text-muted">Unavailable</span>
+                        )}
                       </td>
                     </motion.tr>
                   ))}
