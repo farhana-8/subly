@@ -355,7 +355,7 @@ const Landing = () => {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link 
                 to="/register" 
-                className="w-full sm:w-auto px-10 py-5 bg-white text-primary-purple rounded-full font-black text-lg hover:shadow-[0_0_40px_rgba(255,255,255,0.3)] transition-all hover:scale-105"
+                className="w-full sm:w-auto px-10 py-5 bg-white text-primary-purple rounded-full font-black text-lg hover:shadow-[0_0_20px_rgba(109,40,217,0.25)] transition-all hover:scale-105"
               >
                 Start Free Trial
               </Link>
