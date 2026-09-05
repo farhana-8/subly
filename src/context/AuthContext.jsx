@@ -1,103 +1,240 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, {
+  createContext,
+  useState,
+  useEffect,
+} from 'react';
+
 import authService from '../services/authService';
 import api from '../api/axios';
 
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
+
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token'));
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const [token, setToken] = useState(
+    localStorage.getItem('token')
+  );
+
+  const [isAuthenticated, setIsAuthenticated] =
+    useState(false);
+
   const [loading, setLoading] = useState(true);
 
+
+  // ============================================================
+  // RESTORE AUTHENTICATION
+  // ============================================================
+
   useEffect(() => {
+
     const initializeAuth = async () => {
-      const storedToken = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
+
+      const storedToken =
+        localStorage.getItem('token');
+
+      const storedUser =
+        localStorage.getItem('user');
 
       if (storedToken && storedUser) {
+
         try {
+
           setToken(storedToken);
-          setUser(JSON.parse(storedUser));
+
+          setUser(
+            JSON.parse(storedUser)
+          );
+
           setIsAuthenticated(true);
-          
-          // Optionally verify token with backend
-          // const response = await api.get('/api/users/me');
-          // setUser(response.data);
-          // localStorage.setItem('user', JSON.stringify(response.data));
+
         } catch (error) {
-          console.error('Failed to restore auth state:', error);
+
+          console.error(
+            'Failed to restore auth state:',
+            error
+          );
+
           logout();
         }
       }
+
       setLoading(false);
     };
 
     initializeAuth();
+
   }, []);
 
-  const login = async (credentials) => {
-    try {
-      const response = await authService.login(credentials);
-      // The current backend returns a flat LoginResponse: { token, id, firstName, lastName, email, role, ... }.
-      // Keep compatibility with nested envelopes used by older deployments.
-      const payload = response.data?.data || response.data || {};
-      const token = payload.jwt || payload.token || payload.accessToken;
-      const user = payload.user || (payload.email ? {
-        id: payload.id,
-        firstName: payload.firstName,
-        lastName: payload.lastName,
-        email: payload.email,
-        role: payload.role,
-        status: payload.status,
-        emailVerified: payload.emailVerified,
-      } : null);
-      
-      if (!token) {
-        throw new Error('Authentication failed: No token received from server.');
-      }
 
-      setToken(token);
-      setUser(user);
-      setIsAuthenticated(true);
-      
-      localStorage.setItem('token', token);
-      if (user) {
-        localStorage.setItem('user', JSON.stringify(user));
-      }
-      
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  // ============================================================
+  // NORMAL EMAIL/PASSWORD LOGIN
+  // ============================================================
+
+  const login = async (credentials) => {
+
+    const response =
+      await authService.login(credentials);
+
+    return processLoginResponse(
+      response.data
+    );
   };
 
+
+  // ============================================================
+  // GOOGLE LOGIN
+  // ============================================================
+
+  const googleLogin = async (credential) => {
+
+    const response =
+      await authService.googleLogin(
+        credential
+      );
+
+    return processLoginResponse(
+      response.data
+    );
+  };
+
+
+  // ============================================================
+  // PROCESS LOGIN RESPONSE
+  // ============================================================
+
+  const processLoginResponse = (responseData) => {
+
+    const payload =
+      responseData?.data ||
+      responseData ||
+      {};
+
+    const jwt =
+      payload.jwt ||
+      payload.token ||
+      payload.accessToken;
+
+    const authenticatedUser =
+      payload.user ||
+      (
+        payload.email
+          ? {
+              id: payload.id,
+              firstName: payload.firstName,
+              lastName: payload.lastName,
+              email: payload.email,
+              role: payload.role,
+              status: payload.status,
+              emailVerified:
+                payload.emailVerified,
+            }
+          : null
+      );
+
+    if (!jwt) {
+
+      throw new Error(
+        'Authentication failed: No token received from server.'
+      );
+    }
+
+    setToken(jwt);
+    setUser(authenticatedUser);
+    setIsAuthenticated(true);
+
+    localStorage.setItem(
+      'token',
+      jwt
+    );
+
+    if (authenticatedUser) {
+
+      localStorage.setItem(
+        'user',
+        JSON.stringify(authenticatedUser)
+      );
+    }
+
+    return responseData;
+  };
+
+
+  // ============================================================
+  // LOGOUT
+  // ============================================================
+
   const logout = () => {
+
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);
+
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   };
 
+
+  // ============================================================
+  // UPDATE USER
+  // ============================================================
+
   const updateUserInfo = (nextUser) => {
+
     setUser((currentUser) => {
-      const mergedUser = { ...(currentUser || {}), ...(nextUser || {}) };
-      localStorage.setItem('user', JSON.stringify(mergedUser));
+
+      const mergedUser = {
+        ...(currentUser || {}),
+        ...(nextUser || {}),
+      };
+
+      localStorage.setItem(
+        'user',
+        JSON.stringify(mergedUser)
+      );
+
       return mergedUser;
     });
   };
 
+
+  // ============================================================
+  // REFRESH USER
+  // ============================================================
+
   const refreshUser = async () => {
+
     try {
-      const response = await api.get('/api/auth/me', { skipAuthRedirect: true });
-      const profile = response.data?.data || response.data;
+
+      const response =
+        await api.get(
+          '/api/auth/me',
+          {
+            skipAuthRedirect: true,
+          }
+        );
+
+      const profile =
+        response.data?.data ||
+        response.data;
+
       setUser(profile);
-      localStorage.setItem('user', JSON.stringify(profile));
+
+      localStorage.setItem(
+        'user',
+        JSON.stringify(profile)
+      );
+
     } catch (error) {
-      console.error('Failed to refresh user:', error);
+
+      console.error(
+        'Failed to refresh user:',
+        error
+      );
     }
   };
+
 
   return (
     <AuthContext.Provider
@@ -106,8 +243,12 @@ export const AuthProvider = ({ children }) => {
         token,
         isAuthenticated,
         loading,
+
         login,
+        googleLogin,
+
         logout,
+
         updateUserInfo,
         refreshUser,
       }}

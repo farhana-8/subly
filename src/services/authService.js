@@ -1,28 +1,39 @@
 import api from '../api/axios';
 
 const authService = {
+
   login: async (credentials) => {
-    // credentials = { email, password }
-    return await api.post('/api/auth/login', credentials);
-  },
-  
-  register: async (registerData) => {
-    // registerData = { firstName, lastName, email, password }
-    return await api.post('/api/auth/register', registerData);
+    return api.post('/api/auth/login', credentials);
   },
 
-  verifyEmail: async (token) => {
-    return await api.post('/api/auth/verify-email', { token });
+  googleLogin: async (credential) => {
+    return api.post('/api/auth/google', {
+      credential,
+    });
+  },
+
+  register: async (data) => {
+    return api.post('/api/auth/register', data);
+  },
+
+  verifyEmail: async (data) => {
+    return api.post('/api/auth/verify-email', data);
+  },
+
+  resendVerification: async (data) => {
+    return api.post('/api/auth/resend-verification', data);
   },
 
   forgotPassword: async (email) => {
-    return await api.post('/api/auth/forgot-password', { email });
+    return api.post('/api/auth/forgot-password', {
+      email: email.trim().toLowerCase(),
+    });
   },
 
   resetPassword: async (data) => {
-    // data = { token, password }
-    return await api.post('/api/auth/reset-password', data);
-  }
+    return api.post('/api/auth/reset-password', data);
+  },
+
 };
 
 export default authService;

@@ -10,33 +10,50 @@ const api = axios.create({
 // Request interceptor for attaching JWT
 api.interceptors.request.use(
   (config) => {
-    const publicAuthEndpoints = [
-      '/api/auth/register',
-      '/api/auth/login',
-      '/api/auth/verify-email',
-      '/api/auth/resend-verification',
-      '/api/auth/forgot-password',
-      '/api/auth/reset-password'
-    ];
 
-    const isPublicAuthEndpoint = publicAuthEndpoints.some(endpoint => 
-      config.url && config.url.includes(endpoint)
-    );
+    const publicAuthEndpoints = [
+  '/api/auth/register',
+  '/api/auth/login',
+  '/api/auth/google',
+  '/api/auth/verify-email',
+  '/api/auth/resend-verification',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password'
+];
+
+    const isPublicAuthEndpoint =
+      publicAuthEndpoints.some(
+        endpoint =>
+          config.url &&
+          config.url.includes(endpoint)
+      );
 
     if (isPublicAuthEndpoint) {
+
       config.skipAuthRedirect = true;
+
       if (config.headers) {
+
         delete config.headers.Authorization;
         delete config.headers.authorization;
       }
     }
 
-    const token = localStorage.getItem('token');
-    if (token && !isPublicAuthEndpoint) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const token =
+      localStorage.getItem('token');
+
+    if (
+      token &&
+      !isPublicAuthEndpoint
+    ) {
+
+      config.headers.Authorization =
+        `Bearer ${token}`;
     }
+
     return config;
   },
+
   (error) => {
     return Promise.reject(error);
   }

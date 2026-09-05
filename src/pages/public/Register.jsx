@@ -1,253 +1,806 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Layout, ArrowRight, User, Mail, Lock, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
-import authService from '../../services/authService';
+import React, {
+  useState,
+} from 'react';
+
+import {
+  Link,
+  useNavigate,
+} from 'react-router-dom';
+
+import {
+  motion,
+} from 'framer-motion';
+
+import {
+  Layout,
+  ArrowRight,
+  Mail,
+  Lock,
+  User,
+  AlertCircle,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
+
+import {
+  GoogleLogin,
+} from '@react-oauth/google';
+
+import useAuth from '../../hooks/useAuth';
+
 
 const Register = () => {
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const [firstName, setFirstName] =
+    useState('');
+
+  const [lastName, setLastName] =
+    useState('');
+
+  const [email, setEmail] =
+    useState('');
+
+  const [password, setPassword] =
+    useState('');
+
+  const [confirmPassword, setConfirmPassword] =
+    useState('');
+
+  const [showPassword, setShowPassword] =
+    useState(false);
+
+  const [showConfirmPassword, setShowConfirmPassword] =
+    useState(false);
+
+  const [error, setError] =
+    useState('');
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [googleLoading, setGoogleLoading] =
+    useState(false);
+
+
+  const {
+    register,
+    googleLogin,
+  } = useAuth();
+
+
+  const navigate =
+    useNavigate();
+
+
+  // ============================================================
+  // NORMAL REGISTER
+  // ============================================================
 
   const handleSubmit = async (e) => {
+
     e.preventDefault();
+
     setError('');
 
-    if (formData.password !== formData.confirmPassword) {
-      return setError('Passwords do not match');
+
+    // ------------------------------------------------------------
+    // NAME VALIDATION
+    // ------------------------------------------------------------
+
+    if (
+      firstName.trim().length === 0 ||
+      lastName.trim().length === 0
+    ) {
+
+      setError(
+        'First name and last name are required.'
+      );
+
+      return;
     }
 
-    if (formData.password.length < 8) {
-      return setError('Password must be at least 8 characters long');
+
+    // ------------------------------------------------------------
+    // EMAIL VALIDATION
+    // ------------------------------------------------------------
+
+    const normalizedEmail =
+      email.trim().toLowerCase();
+
+    const emailRegex =
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+
+    if (!emailRegex.test(normalizedEmail)) {
+
+      setError(
+        'Please enter a valid email address.'
+      );
+
+      return;
     }
+
+
+    // ------------------------------------------------------------
+    // PASSWORD VALIDATION
+    // ------------------------------------------------------------
+
+    if (password.length < 8) {
+
+      setError(
+        'Password must be at least 8 characters long.'
+      );
+
+      return;
+    }
+
+
+    if (!/[A-Z]/.test(password)) {
+
+      setError(
+        'Password must contain at least one uppercase letter.'
+      );
+
+      return;
+    }
+
+
+    if (!/[a-z]/.test(password)) {
+
+      setError(
+        'Password must contain at least one lowercase letter.'
+      );
+
+      return;
+    }
+
+
+    if (!/[0-9]/.test(password)) {
+
+      setError(
+        'Password must contain at least one number.'
+      );
+
+      return;
+    }
+
+
+    if (!/[^A-Za-z0-9]/.test(password)) {
+
+      setError(
+        'Password must contain at least one special character.'
+      );
+
+      return;
+    }
+
+
+    // ------------------------------------------------------------
+    // CONFIRM PASSWORD
+    // ------------------------------------------------------------
+
+    if (password !== confirmPassword) {
+
+      setError(
+        'Passwords do not match.'
+      );
+
+      return;
+    }
+
 
     setLoading(true);
+
+
     try {
-      // Create request object matching backend RegisterRequest DTO
-      const registerData = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        password: formData.password
-      };
-      
-      await authService.register(registerData);
-      setIsSuccess(true);
+
+      await register({
+        firstName:
+          firstName.trim(),
+
+        lastName:
+          lastName.trim(),
+
+        email:
+          normalizedEmail,
+
+        password,
+      });
+
+
+      /*
+       * Normal registration creates an
+       * unverified account.
+       *
+       * Redirect user to email verification.
+       */
+
+      navigate(
+        '/verify-email',
+        {
+          replace: true,
+          state: {
+            email:
+              normalizedEmail,
+          },
+        }
+      );
+
     } catch (err) {
-      console.error('Registration error:', err);
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+
+      /*
+       * Backend returns HTTP 409 when the
+       * email is already registered.
+       */
+
+      if (err.response?.status === 409) {
+
+        setError(
+          'An account with this email already exists. Please sign in instead.'
+        );
+
+      } else {
+
+        setError(
+          err.response?.data?.message ||
+          err.message ||
+          'Registration failed. Please try again.'
+        );
+      }
+
     } finally {
+
       setLoading(false);
     }
   };
 
+
+  // ============================================================
+  // GOOGLE REGISTER / LOGIN
+  // ============================================================
+
+  const handleGoogleSuccess =
+    async (credentialResponse) => {
+
+      setError('');
+
+      setGoogleLoading(true);
+
+
+      try {
+
+        if (
+          !credentialResponse?.credential
+        ) {
+
+          throw new Error(
+            'Google authentication failed. No credential received.'
+          );
+        }
+
+
+        const data =
+          await googleLogin(
+            credentialResponse.credential
+          );
+
+
+        const payload =
+          data?.data ||
+          data ||
+          {};
+
+
+        const user =
+          payload?.user ||
+          payload;
+
+
+        const isAdmin =
+          user?.role === 'ADMIN' ||
+          user?.roles?.includes('ADMIN');
+
+
+        navigate(
+          isAdmin
+            ? '/admin/dashboard'
+            : '/dashboard',
+          {
+            replace: true,
+          }
+        );
+
+      } catch (err) {
+
+        setError(
+          err.response?.data?.message ||
+          err.message ||
+          'Google sign-in failed. Please try again.'
+        );
+
+      } finally {
+
+        setGoogleLoading(false);
+      }
+    };
+
+
+  const handleGoogleError =
+    () => {
+
+      setGoogleLoading(false);
+
+      setError(
+        'Google sign-in was cancelled or failed. Please try again.'
+      );
+    };
+
+
   return (
+
     <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-4 bg-bg-deep relative overflow-hidden transition-colors duration-300">
-      {/* Background glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary-magenta/5 rounded-full blur-[120px] pointer-events-none"></div>
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-lg relative z-10"
+      {/* BACKGROUND */}
+
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary-violet/10 rounded-full blur-[120px] pointer-events-none">
+      </div>
+
+
+      <motion.div
+        initial={{
+          opacity: 0,
+          y: 20,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        className="w-full max-w-md relative z-10"
       >
+
         <div className="bg-bg-card border border-main rounded-[2rem] p-8 md:p-10 shadow-2xl backdrop-blur-xl">
-          <AnimatePresence mode="wait">
-            {!isSuccess ? (
-              <motion.div
-                key="register-form"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0, x: -20 }}
-              >
-                <div className="text-center mb-8">
-                  <Link to="/" className="inline-flex items-center mb-6 group">
-                    <div className="bg-gradient-to-br from-primary-magenta to-accent-coral p-2 rounded-xl">
-                      <Layout className="h-6 w-6 text-white" />
-                    </div>
-                    <span className="ml-3 text-2xl font-black text-main uppercase tracking-tighter">Subly</span>
-                  </Link>
-                  <h2 className="text-3xl font-black text-main text-balance">Start your free trial</h2>
-                  <p className="text-muted mt-2">No credit card required for 14 days</p>
+
+          {/* HEADER */}
+
+          <div className="text-center mb-8">
+
+            <Link
+              to="/"
+              className="inline-flex items-center mb-6"
+            >
+
+              <div className="bg-gradient-to-br from-primary-violet to-primary-magenta p-2 rounded-xl">
+
+                <Layout className="h-6 w-6 text-white" />
+
+              </div>
+
+              <span className="ml-3 text-2xl font-black text-main uppercase tracking-tighter">
+                Subly
+              </span>
+
+            </Link>
+
+
+            <h2 className="text-3xl font-black text-main">
+              Create your account
+            </h2>
+
+
+            <p className="text-muted mt-2">
+              Start your 14-day free trial
+            </p>
+
+          </div>
+
+
+          {/* ERROR */}
+
+          {error && (
+
+            <motion.div
+              initial={{
+                opacity: 0,
+                scale: 0.95,
+              }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+              }}
+              className="mb-5 bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-2xl flex items-start gap-3 text-sm"
+            >
+
+              <AlertCircle className="h-5 w-5 flex-shrink-0" />
+
+              <span>
+                {error}
+              </span>
+
+            </motion.div>
+
+          )}
+
+
+          {/* GOOGLE */}
+
+          <div className="flex justify-center w-full">
+
+            {googleLoading ? (
+
+              <div className="w-full h-[44px] rounded-xl border border-main flex items-center justify-center">
+
+                <div className="h-5 w-5 border-2 border-primary-violet/30 border-t-primary-violet rounded-full animate-spin">
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  {error && (
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-2xl flex items-start gap-3 text-sm"
-                    >
-                      <AlertCircle className="h-5 w-5 flex-shrink-0" />
-                      <span>{error}</span>
-                    </motion.div>
-                  )}
+                <span className="ml-3 text-sm font-semibold text-muted">
+                  Creating account with Google...
+                </span>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-muted ml-1">First Name</label>
-                      <div className="relative group">
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted group-focus-within:text-primary-magenta transition-colors" />
-                        <input
-                          name="firstName"
-                          type="text"
-                          required
-                          value={formData.firstName}
-                          onChange={handleChange}
-                          className="w-full bg-bg-deep border border-main rounded-2xl py-3.5 pl-12 pr-4 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-magenta/50 focus:border-primary-magenta transition-all"
-                          placeholder="John"
-                        />
-                      </div>
-                    </div>
+              </div>
 
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-muted ml-1">Last Name</label>
-                      <div className="relative group">
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted group-focus-within:text-primary-magenta transition-colors" />
-                        <input
-                          name="lastName"
-                          type="text"
-                          required
-                          value={formData.lastName}
-                          onChange={handleChange}
-                          className="w-full bg-bg-deep border border-main rounded-2xl py-3.5 pl-12 pr-4 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-magenta/50 focus:border-primary-magenta transition-all"
-                          placeholder="Doe"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 col-span-2">
-                      <label className="text-sm font-bold text-muted ml-1">Email Address</label>
-                      <div className="relative group">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted group-focus-within:text-primary-magenta transition-colors" />
-                        <input
-                          name="email"
-                          type="email"
-                          required
-                          value={formData.email}
-                          onChange={handleChange}
-                          className="w-full bg-bg-deep border border-main rounded-2xl py-3.5 pl-12 pr-4 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-magenta/50 focus:border-primary-magenta transition-all"
-                          placeholder="name@company.com"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-muted ml-1">Password</label>
-                      <div className="relative group">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted group-focus-within:text-primary-magenta transition-colors" />
-                        <input
-                          name="password"
-                          type={showPassword ? "text" : "password"}
-                          required
-                          value={formData.password}
-                          onChange={handleChange}
-                          className="w-full bg-bg-deep border border-main rounded-2xl py-3.5 pl-12 pr-12 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-magenta/50 focus:border-primary-magenta transition-all"
-                          placeholder="••••••••"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-main transition-colors"
-                        >
-                          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-muted ml-1">Confirm</label>
-                      <div className="relative group">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted group-focus-within:text-primary-magenta transition-colors" />
-                        <input
-                          name="confirmPassword"
-                          type={showConfirmPassword ? "text" : "password"}
-                          required
-                          value={formData.confirmPassword}
-                          onChange={handleChange}
-                          className="w-full bg-bg-deep border border-main rounded-2xl py-3.5 pl-12 pr-12 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-magenta/50 focus:border-primary-magenta transition-all"
-                          placeholder="••••••••"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-main transition-colors"
-                        >
-                          {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-4">
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className={`w-full bg-gradient-to-r from-primary-magenta to-accent-coral text-white rounded-2xl py-4 font-black text-lg shadow-lg shadow-primary-magenta/20 hover:shadow-primary-magenta/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
-                    >
-                      {loading ? (
-                        <div className="h-6 w-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      ) : (
-                        <>
-                          Create Account
-                          <ArrowRight className="h-5 w-5" />
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
-
-                <div className="mt-8 text-center">
-                  <p className="text-muted text-sm">
-                    Already have an account?{' '}
-                    <Link to="/login" className="text-main font-black hover:text-primary-magenta transition-colors">
-                      Sign In
-                    </Link>
-                  </p>
-                </div>
-              </motion.div>
             ) : (
-              <motion.div
-                key="success-message"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-10"
-              >
-                <div className="w-20 h-20 bg-accent-lime/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <CheckCircle2 className="h-10 w-10 text-accent-lime" />
-                </div>
-                <h2 className="text-3xl font-black text-main mb-4">Check your email</h2>
-                <p className="text-muted mb-8 leading-relaxed">
-                  We've sent a verification link to <span className="text-main font-bold">{formData.email}</span>. 
-                  Please verify your email address to activate your account.
-                </p>
-                <Link 
-                  to="/login" 
-                  className="inline-flex items-center text-primary-magenta font-black hover:underline gap-2"
-                >
-                  Return to Login
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </motion.div>
+
+              <GoogleLogin
+                onSuccess={
+                  handleGoogleSuccess
+                }
+                onError={
+                  handleGoogleError
+                }
+                text="continue_with"
+                theme="outline"
+                size="large"
+                width="100%"
+              />
+
             )}
-          </AnimatePresence>
+
+          </div>
+
+
+          {/* DIVIDER */}
+
+          <div className="flex items-center gap-4 my-7">
+
+            <div className="flex-1 h-px bg-main">
+            </div>
+
+            <span className="text-xs font-bold text-muted uppercase tracking-widest">
+              OR
+            </span>
+
+            <div className="flex-1 h-px bg-main">
+            </div>
+
+          </div>
+
+
+          {/* REGISTER FORM */}
+
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-5"
+          >
+
+            {/* FIRST / LAST NAME */}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <div className="space-y-2">
+
+                <label className="text-sm font-bold text-muted ml-1">
+                  First Name
+                </label>
+
+                <div className="relative group">
+
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted group-focus-within:text-primary-violet transition-colors" />
+
+                  <input
+                    type="text"
+                    required
+                    value={firstName}
+                    onChange={(e) =>
+                      setFirstName(
+                        e.target.value
+                      )
+                    }
+                    className="w-full bg-bg-deep border border-main rounded-2xl py-4 pl-12 pr-4 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-violet/50 focus:border-primary-violet transition-all"
+                    placeholder="First name"
+                  />
+
+                </div>
+
+              </div>
+
+
+              <div className="space-y-2">
+
+                <label className="text-sm font-bold text-muted ml-1">
+                  Last Name
+                </label>
+
+                <div className="relative group">
+
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted group-focus-within:text-primary-violet transition-colors" />
+
+                  <input
+                    type="text"
+                    required
+                    value={lastName}
+                    onChange={(e) =>
+                      setLastName(
+                        e.target.value
+                      )
+                    }
+                    className="w-full bg-bg-deep border border-main rounded-2xl py-4 pl-12 pr-4 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-violet/50 focus:border-primary-violet transition-all"
+                    placeholder="Last name"
+                  />
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            {/* EMAIL */}
+
+            <div className="space-y-2">
+
+              <label className="text-sm font-bold text-muted ml-1">
+                Email Address
+              </label>
+
+              <div className="relative group">
+
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted group-focus-within:text-primary-violet transition-colors" />
+
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) =>
+                    setEmail(
+                      e.target.value
+                    )
+                  }
+                  className="w-full bg-bg-deep border border-main rounded-2xl py-4 pl-12 pr-4 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-violet/50 focus:border-primary-violet transition-all"
+                  placeholder="name@company.com"
+                />
+
+              </div>
+
+            </div>
+
+
+            {/* PASSWORD */}
+
+            <div className="space-y-2">
+
+              <label className="text-sm font-bold text-muted ml-1">
+                Password
+              </label>
+
+              <div className="relative group">
+
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted group-focus-within:text-primary-violet transition-colors" />
+
+                <input
+                  type={
+                    showPassword
+                      ? 'text'
+                      : 'password'
+                  }
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) =>
+                    setPassword(
+                      e.target.value
+                    )
+                  }
+                  className="w-full bg-bg-deep border border-main rounded-2xl py-4 pl-12 pr-12 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-violet/50 focus:border-primary-violet transition-all"
+                  placeholder="Minimum 8 characters"
+                />
+
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPassword(
+                      !showPassword
+                    )
+                  }
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-main"
+                >
+
+                  {showPassword
+                    ? (
+                      <EyeOff className="h-5 w-5" />
+                    )
+                    : (
+                      <Eye className="h-5 w-5" />
+                    )}
+
+                </button>
+
+              </div>
+
+
+              {/* PASSWORD REQUIREMENTS */}
+
+              <div className="text-xs text-muted ml-1 space-y-1 pt-1">
+
+                <p>
+                  Password must contain:
+                </p>
+
+                <p className={
+                  password.length >= 8
+                    ? 'text-green-500'
+                    : 'text-muted'
+                }>
+                  • At least 8 characters
+                </p>
+
+                <p className={
+                  /[A-Z]/.test(password)
+                    ? 'text-green-500'
+                    : 'text-muted'
+                }>
+                  • At least one uppercase letter
+                </p>
+
+                <p className={
+                  /[a-z]/.test(password)
+                    ? 'text-green-500'
+                    : 'text-muted'
+                }>
+                  • At least one lowercase letter
+                </p>
+
+                <p className={
+                  /[0-9]/.test(password)
+                    ? 'text-green-500'
+                    : 'text-muted'
+                }>
+                  • At least one number
+                </p>
+
+                <p className={
+                  /[^A-Za-z0-9]/.test(password)
+                    ? 'text-green-500'
+                    : 'text-muted'
+                }>
+                  • At least one special character
+                </p>
+
+              </div>
+
+            </div>
+
+
+            {/* CONFIRM PASSWORD */}
+
+            <div className="space-y-2">
+
+              <label className="text-sm font-bold text-muted ml-1">
+                Confirm Password
+              </label>
+
+              <div className="relative group">
+
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted group-focus-within:text-primary-violet transition-colors" />
+
+                <input
+                  type={
+                    showConfirmPassword
+                      ? 'text'
+                      : 'password'
+                  }
+                  required
+                  value={confirmPassword}
+                  onChange={(e) =>
+                    setConfirmPassword(
+                      e.target.value
+                    )
+                  }
+                  className="w-full bg-bg-deep border border-main rounded-2xl py-4 pl-12 pr-12 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-violet/50 focus:border-primary-violet transition-all"
+                  placeholder="Repeat your password"
+                />
+
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowConfirmPassword(
+                      !showConfirmPassword
+                    )
+                  }
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-main"
+                >
+
+                  {showConfirmPassword
+                    ? (
+                      <EyeOff className="h-5 w-5" />
+                    )
+                    : (
+                      <Eye className="h-5 w-5" />
+                    )}
+
+                </button>
+
+              </div>
+
+            </div>
+
+
+            {/* SUBMIT */}
+
+            <button
+              type="submit"
+              disabled={
+                loading ||
+                googleLoading
+              }
+              className={`w-full bg-gradient-to-r from-primary-violet to-primary-purple text-white rounded-2xl py-4 font-black text-lg shadow-lg shadow-primary-violet/20 hover:shadow-primary-violet/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${
+                loading ||
+                googleLoading
+                  ? 'opacity-70 cursor-not-allowed'
+                  : ''
+              }`}
+            >
+
+              {loading ? (
+
+                <div className="h-6 w-6 border-2 border-white/30 border-t-white rounded-full animate-spin">
+                </div>
+
+              ) : (
+
+                <>
+
+                  Create Account
+
+                  <ArrowRight className="h-5 w-5" />
+
+                </>
+
+              )}
+
+            </button>
+
+          </form>
+
+
+          {/* FOOTER */}
+
+          <div className="mt-8 text-center">
+
+            <p className="text-muted text-sm">
+
+              Already have an account?{' '}
+
+              <Link
+                to="/login"
+                className="text-main font-black hover:text-primary-violet transition-colors"
+              >
+                Sign in
+              </Link>
+
+            </p>
+
+          </div>
+
         </div>
+
       </motion.div>
+
     </div>
+
   );
 };
+
 
 export default Register;
