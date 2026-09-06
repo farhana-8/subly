@@ -77,21 +77,26 @@ const Register = () => {
   // ============================================================
 
   const handleSubmit = async (e) => {
-
     e.preventDefault();
 
     setError('');
 
 
-    // ------------------------------------------------------------
+    // ----------------------------------------------------------
     // NAME VALIDATION
-    // ------------------------------------------------------------
+    // ----------------------------------------------------------
+
+    const trimmedFirstName =
+      firstName.trim();
+
+    const trimmedLastName =
+      lastName.trim();
+
 
     if (
-      firstName.trim().length === 0 ||
-      lastName.trim().length === 0
+      !trimmedFirstName ||
+      !trimmedLastName
     ) {
-
       setError(
         'First name and last name are required.'
       );
@@ -100,9 +105,9 @@ const Register = () => {
     }
 
 
-    // ------------------------------------------------------------
+    // ----------------------------------------------------------
     // EMAIL VALIDATION
-    // ------------------------------------------------------------
+    // ----------------------------------------------------------
 
     const normalizedEmail =
       email.trim().toLowerCase();
@@ -111,8 +116,11 @@ const Register = () => {
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 
-    if (!emailRegex.test(normalizedEmail)) {
-
+    if (
+      !emailRegex.test(
+        normalizedEmail
+      )
+    ) {
       setError(
         'Please enter a valid email address.'
       );
@@ -121,12 +129,13 @@ const Register = () => {
     }
 
 
-    // ------------------------------------------------------------
+    // ----------------------------------------------------------
     // PASSWORD VALIDATION
-    // ------------------------------------------------------------
+    // ----------------------------------------------------------
 
-    if (password.length < 8) {
-
+    if (
+      password.length < 8
+    ) {
       setError(
         'Password must be at least 8 characters long.'
       );
@@ -135,8 +144,9 @@ const Register = () => {
     }
 
 
-    if (!/[A-Z]/.test(password)) {
-
+    if (
+      !/[A-Z]/.test(password)
+    ) {
       setError(
         'Password must contain at least one uppercase letter.'
       );
@@ -145,8 +155,9 @@ const Register = () => {
     }
 
 
-    if (!/[a-z]/.test(password)) {
-
+    if (
+      !/[a-z]/.test(password)
+    ) {
       setError(
         'Password must contain at least one lowercase letter.'
       );
@@ -155,8 +166,9 @@ const Register = () => {
     }
 
 
-    if (!/[0-9]/.test(password)) {
-
+    if (
+      !/[0-9]/.test(password)
+    ) {
       setError(
         'Password must contain at least one number.'
       );
@@ -165,8 +177,9 @@ const Register = () => {
     }
 
 
-    if (!/[^A-Za-z0-9]/.test(password)) {
-
+    if (
+      !/[^A-Za-z0-9]/.test(password)
+    ) {
       setError(
         'Password must contain at least one special character.'
       );
@@ -175,12 +188,13 @@ const Register = () => {
     }
 
 
-    // ------------------------------------------------------------
+    // ----------------------------------------------------------
     // CONFIRM PASSWORD
-    // ------------------------------------------------------------
+    // ----------------------------------------------------------
 
-    if (password !== confirmPassword) {
-
+    if (
+      password !== confirmPassword
+    ) {
       setError(
         'Passwords do not match.'
       );
@@ -196,10 +210,10 @@ const Register = () => {
 
       await register({
         firstName:
-          firstName.trim(),
+          trimmedFirstName,
 
         lastName:
-          lastName.trim(),
+          trimmedLastName,
 
         email:
           normalizedEmail,
@@ -212,13 +226,14 @@ const Register = () => {
        * Normal registration creates an
        * unverified account.
        *
-       * Redirect user to email verification.
+       * Redirect to email verification.
        */
 
       navigate(
         '/verify-email',
         {
           replace: true,
+
           state: {
             email:
               normalizedEmail,
@@ -226,24 +241,56 @@ const Register = () => {
         }
       );
 
+
     } catch (err) {
 
-      /*
-       * Backend returns HTTP 409 when the
-       * email is already registered.
-       */
+      console.error(
+        'Registration failed:',
+        err
+      );
 
-      if (err.response?.status === 409) {
+
+      const status =
+        err?.response?.status;
+
+
+      const serverMessage =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.response?.data?.errorMessage;
+
+
+      if (
+        status === 409
+      ) {
 
         setError(
           'An account with this email already exists. Please sign in instead.'
         );
 
+      } else if (
+        status === 400
+      ) {
+
+        setError(
+          serverMessage ||
+          'Invalid registration details. Please check your information and try again.'
+        );
+
+      } else if (
+        status >= 500
+      ) {
+
+        setError(
+          serverMessage ||
+          'The server is temporarily unavailable. Please try again in a moment.'
+        );
+
       } else {
 
         setError(
-          err.response?.data?.message ||
-          err.message ||
+          serverMessage ||
+          err?.message ||
           'Registration failed. Please try again.'
         );
       }
@@ -251,55 +298,96 @@ const Register = () => {
     } finally {
 
       setLoading(false);
+
     }
   };
 
 
   // ============================================================
   // GOOGLE REGISTER / LOGIN
+  //
+  // IMPORTANT:
+  //
+  // The backend endpoint /api/auth/google is used here.
+  //
+  // If the Google account does not exist, the backend must
+  // create the user.
+  //
+  // If the Google account already exists, the backend logs
+  // the user in.
   // ============================================================
 
   const handleGoogleSuccess =
     async (credentialResponse) => {
 
       setError('');
-
       setGoogleLoading(true);
 
 
       try {
 
-        if (
-          !credentialResponse?.credential
-        ) {
+        // ------------------------------------------------------
+        // CHECK GOOGLE CREDENTIAL
+        // ------------------------------------------------------
+
+        const credential =
+          credentialResponse?.credential;
+
+
+        if (!credential) {
 
           throw new Error(
-            'Google authentication failed. No credential received.'
+            'Google authentication failed. No credential was received.'
           );
+
         }
 
 
-        const data =
+        // ------------------------------------------------------
+        // SEND GOOGLE CREDENTIAL TO BACKEND
+        // ------------------------------------------------------
+
+        const result =
           await googleLogin(
-            credentialResponse.credential
+            credential
           );
 
 
-        const payload =
-          data?.data ||
-          data ||
-          {};
-
+        // ------------------------------------------------------
+        // AUTHCONTEXT RETURNS:
+        //
+        // {
+        //   token,
+        //   user,
+        //   data
+        // }
+        // ------------------------------------------------------
 
         const user =
-          payload?.user ||
-          payload;
+          result?.user;
 
+
+        if (!result?.token) {
+
+          throw new Error(
+            'Google authentication succeeded, but no application token was received.'
+          );
+
+        }
+
+
+        // ------------------------------------------------------
+        // DETERMINE ROLE
+        // ------------------------------------------------------
 
         const isAdmin =
           user?.role === 'ADMIN' ||
           user?.roles?.includes('ADMIN');
 
+
+        // ------------------------------------------------------
+        // GOOGLE AUTHENTICATION SUCCESS
+        // ------------------------------------------------------
 
         navigate(
           isAdmin
@@ -312,18 +400,105 @@ const Register = () => {
 
       } catch (err) {
 
-        setError(
-          err.response?.data?.message ||
-          err.message ||
-          'Google sign-in failed. Please try again.'
+        console.error(
+          'Google registration/login failed:',
+          err
         );
+
+
+        const status =
+          err?.response?.status;
+
+
+        const serverData =
+          err?.response?.data;
+
+
+        const serverMessage =
+          serverData?.message ||
+          serverData?.error ||
+          serverData?.errorMessage;
+
+
+        // ------------------------------------------------------
+        // GOOGLE ERROR MESSAGES
+        // ------------------------------------------------------
+
+        if (
+          status === 409
+        ) {
+
+          setError(
+            serverMessage ||
+            'An account with this Google email already exists. Please sign in with Google instead.'
+          );
+
+        } else if (
+          status === 400
+        ) {
+
+          setError(
+            serverMessage ||
+            'Google authentication request was invalid. Please try again.'
+          );
+
+        } else if (
+          status === 401
+        ) {
+
+          setError(
+            serverMessage ||
+            'Google authentication failed. Please try again.'
+          );
+
+        } else if (
+          status === 403
+        ) {
+
+          setError(
+            serverMessage ||
+            'Google authentication is not permitted for this account.'
+          );
+
+        } else if (
+          status >= 500
+        ) {
+
+          setError(
+            serverMessage ||
+            'The server is temporarily unavailable. Please try again later.'
+          );
+
+        } else if (
+          err?.code === 'ERR_NETWORK' ||
+          !err?.response
+        ) {
+
+          setError(
+            'Unable to connect to the server. Please check your connection and try again.'
+          );
+
+        } else {
+
+          setError(
+            serverMessage ||
+            err?.message ||
+            'Google registration failed. Please try again.'
+          );
+
+        }
 
       } finally {
 
         setGoogleLoading(false);
+
       }
     };
 
+
+  // ============================================================
+  // GOOGLE ERROR
+  // ============================================================
 
   const handleGoogleError =
     () => {
@@ -336,9 +511,13 @@ const Register = () => {
     };
 
 
-  return (
+  // ============================================================
+  // UI
+  // ============================================================
 
+  return (
     <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-4 bg-bg-deep relative overflow-hidden transition-colors duration-300">
+
 
       {/* BACKGROUND */}
 
@@ -358,7 +537,9 @@ const Register = () => {
         className="w-full max-w-md relative z-10"
       >
 
+
         <div className="bg-bg-card border border-main rounded-[2rem] p-8 md:p-10 shadow-2xl backdrop-blur-xl">
+
 
           {/* HEADER */}
 
@@ -375,20 +556,27 @@ const Register = () => {
 
               </div>
 
+
               <span className="ml-3 text-2xl font-black text-main uppercase tracking-tighter">
+
                 Subly
+
               </span>
 
             </Link>
 
 
             <h2 className="text-3xl font-black text-main">
+
               Create your account
+
             </h2>
 
 
             <p className="text-muted mt-2">
+
               Start your 14-day free trial
+
             </p>
 
           </div>
@@ -410,10 +598,12 @@ const Register = () => {
               className="mb-5 bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-2xl flex items-start gap-3 text-sm"
             >
 
-              <AlertCircle className="h-5 w-5 flex-shrink-0" />
+              <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
 
-              <span>
+              <span className="leading-relaxed">
+
                 {error}
+
               </span>
 
             </motion.div>
@@ -433,7 +623,9 @@ const Register = () => {
                 </div>
 
                 <span className="ml-3 text-sm font-semibold text-muted">
+
                   Creating account with Google...
+
                 </span>
 
               </div>
@@ -444,12 +636,17 @@ const Register = () => {
                 onSuccess={
                   handleGoogleSuccess
                 }
+
                 onError={
                   handleGoogleError
                 }
+
                 text="continue_with"
+
                 theme="outline"
+
                 size="large"
+
                 width="100%"
               />
 
@@ -466,7 +663,9 @@ const Register = () => {
             </div>
 
             <span className="text-xs font-bold text-muted uppercase tracking-widest">
+
               OR
+
             </span>
 
             <div className="flex-1 h-px bg-main">
@@ -482,29 +681,43 @@ const Register = () => {
             className="space-y-5"
           >
 
+
             {/* FIRST / LAST NAME */}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
+
+              {/* FIRST NAME */}
+
               <div className="space-y-2">
 
                 <label className="text-sm font-bold text-muted ml-1">
+
                   First Name
+
                 </label>
+
 
                 <div className="relative group">
 
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted group-focus-within:text-primary-violet transition-colors" />
 
+
                   <input
                     type="text"
                     required
                     value={firstName}
-                    onChange={(e) =>
+                    onChange={(e) => {
+
                       setFirstName(
                         e.target.value
-                      )
-                    }
+                      );
+
+                      if (error) {
+                        setError('');
+                      }
+
+                    }}
                     className="w-full bg-bg-deep border border-main rounded-2xl py-4 pl-12 pr-4 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-violet/50 focus:border-primary-violet transition-all"
                     placeholder="First name"
                   />
@@ -514,25 +727,37 @@ const Register = () => {
               </div>
 
 
+              {/* LAST NAME */}
+
               <div className="space-y-2">
 
                 <label className="text-sm font-bold text-muted ml-1">
+
                   Last Name
+
                 </label>
+
 
                 <div className="relative group">
 
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted group-focus-within:text-primary-violet transition-colors" />
 
+
                   <input
                     type="text"
                     required
                     value={lastName}
-                    onChange={(e) =>
+                    onChange={(e) => {
+
                       setLastName(
                         e.target.value
-                      )
-                    }
+                      );
+
+                      if (error) {
+                        setError('');
+                      }
+
+                    }}
                     className="w-full bg-bg-deep border border-main rounded-2xl py-4 pl-12 pr-4 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-violet/50 focus:border-primary-violet transition-all"
                     placeholder="Last name"
                   />
@@ -549,22 +774,32 @@ const Register = () => {
             <div className="space-y-2">
 
               <label className="text-sm font-bold text-muted ml-1">
+
                 Email Address
+
               </label>
+
 
               <div className="relative group">
 
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted group-focus-within:text-primary-violet transition-colors" />
 
+
                 <input
                   type="email"
                   required
                   value={email}
-                  onChange={(e) =>
+                  onChange={(e) => {
+
                     setEmail(
                       e.target.value
-                    )
-                  }
+                    );
+
+                    if (error) {
+                      setError('');
+                    }
+
+                  }}
                   className="w-full bg-bg-deep border border-main rounded-2xl py-4 pl-12 pr-4 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-violet/50 focus:border-primary-violet transition-all"
                   placeholder="name@company.com"
                 />
@@ -579,12 +814,16 @@ const Register = () => {
             <div className="space-y-2">
 
               <label className="text-sm font-bold text-muted ml-1">
+
                 Password
+
               </label>
+
 
               <div className="relative group">
 
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted group-focus-within:text-primary-violet transition-colors" />
+
 
                 <input
                   type={
@@ -595,11 +834,17 @@ const Register = () => {
                   required
                   minLength={8}
                   value={password}
-                  onChange={(e) =>
+                  onChange={(e) => {
+
                     setPassword(
                       e.target.value
-                    )
-                  }
+                    );
+
+                    if (error) {
+                      setError('');
+                    }
+
+                  }}
                   className="w-full bg-bg-deep border border-main rounded-2xl py-4 pl-12 pr-12 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-violet/50 focus:border-primary-violet transition-all"
                   placeholder="Minimum 8 characters"
                 />
@@ -609,19 +854,27 @@ const Register = () => {
                   type="button"
                   onClick={() =>
                     setShowPassword(
-                      !showPassword
+                      (current) =>
+                        !current
                     )
                   }
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-main"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-main transition-colors"
+                  aria-label={
+                    showPassword
+                      ? 'Hide password'
+                      : 'Show password'
+                  }
                 >
 
-                  {showPassword
-                    ? (
-                      <EyeOff className="h-5 w-5" />
-                    )
-                    : (
-                      <Eye className="h-5 w-5" />
-                    )}
+                  {showPassword ? (
+
+                    <EyeOff className="h-5 w-5" />
+
+                  ) : (
+
+                    <Eye className="h-5 w-5" />
+
+                  )}
 
                 </button>
 
@@ -636,43 +889,53 @@ const Register = () => {
                   Password must contain:
                 </p>
 
-                <p className={
-                  password.length >= 8
-                    ? 'text-green-500'
-                    : 'text-muted'
-                }>
+                <p
+                  className={
+                    password.length >= 8
+                      ? 'text-green-500'
+                      : 'text-muted'
+                  }
+                >
                   • At least 8 characters
                 </p>
 
-                <p className={
-                  /[A-Z]/.test(password)
-                    ? 'text-green-500'
-                    : 'text-muted'
-                }>
+                <p
+                  className={
+                    /[A-Z]/.test(password)
+                      ? 'text-green-500'
+                      : 'text-muted'
+                  }
+                >
                   • At least one uppercase letter
                 </p>
 
-                <p className={
-                  /[a-z]/.test(password)
-                    ? 'text-green-500'
-                    : 'text-muted'
-                }>
+                <p
+                  className={
+                    /[a-z]/.test(password)
+                      ? 'text-green-500'
+                      : 'text-muted'
+                  }
+                >
                   • At least one lowercase letter
                 </p>
 
-                <p className={
-                  /[0-9]/.test(password)
-                    ? 'text-green-500'
-                    : 'text-muted'
-                }>
+                <p
+                  className={
+                    /[0-9]/.test(password)
+                      ? 'text-green-500'
+                      : 'text-muted'
+                  }
+                >
                   • At least one number
                 </p>
 
-                <p className={
-                  /[^A-Za-z0-9]/.test(password)
-                    ? 'text-green-500'
-                    : 'text-muted'
-                }>
+                <p
+                  className={
+                    /[^A-Za-z0-9]/.test(password)
+                      ? 'text-green-500'
+                      : 'text-muted'
+                  }
+                >
                   • At least one special character
                 </p>
 
@@ -686,12 +949,16 @@ const Register = () => {
             <div className="space-y-2">
 
               <label className="text-sm font-bold text-muted ml-1">
+
                 Confirm Password
+
               </label>
+
 
               <div className="relative group">
 
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted group-focus-within:text-primary-violet transition-colors" />
+
 
                 <input
                   type={
@@ -701,11 +968,17 @@ const Register = () => {
                   }
                   required
                   value={confirmPassword}
-                  onChange={(e) =>
+                  onChange={(e) => {
+
                     setConfirmPassword(
                       e.target.value
-                    )
-                  }
+                    );
+
+                    if (error) {
+                      setError('');
+                    }
+
+                  }}
                   className="w-full bg-bg-deep border border-main rounded-2xl py-4 pl-12 pr-12 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-violet/50 focus:border-primary-violet transition-all"
                   placeholder="Repeat your password"
                 />
@@ -715,19 +988,27 @@ const Register = () => {
                   type="button"
                   onClick={() =>
                     setShowConfirmPassword(
-                      !showConfirmPassword
+                      (current) =>
+                        !current
                     )
                   }
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-main"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-main transition-colors"
+                  aria-label={
+                    showConfirmPassword
+                      ? 'Hide password'
+                      : 'Show password'
+                  }
                 >
 
-                  {showConfirmPassword
-                    ? (
-                      <EyeOff className="h-5 w-5" />
-                    )
-                    : (
-                      <Eye className="h-5 w-5" />
-                    )}
+                  {showConfirmPassword ? (
+
+                    <EyeOff className="h-5 w-5" />
+
+                  ) : (
+
+                    <Eye className="h-5 w-5" />
+
+                  )}
 
                 </button>
 
@@ -786,7 +1067,9 @@ const Register = () => {
                 to="/login"
                 className="text-main font-black hover:text-primary-violet transition-colors"
               >
+
                 Sign in
+
               </Link>
 
             </p>
@@ -798,7 +1081,6 @@ const Register = () => {
       </motion.div>
 
     </div>
-
   );
 };
 

@@ -10,7 +10,6 @@ import api from '../api/axios';
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-
   const [user, setUser] = useState(null);
 
   const [token, setToken] = useState(
@@ -28,9 +27,7 @@ export const AuthProvider = ({ children }) => {
   // ============================================================
 
   useEffect(() => {
-
-    const initializeAuth = async () => {
-
+    const initializeAuth = () => {
       const storedToken =
         localStorage.getItem('token');
 
@@ -38,25 +35,26 @@ export const AuthProvider = ({ children }) => {
         localStorage.getItem('user');
 
       if (storedToken && storedUser) {
-
         try {
+          const parsedUser =
+            JSON.parse(storedUser);
 
           setToken(storedToken);
-
-          setUser(
-            JSON.parse(storedUser)
-          );
-
+          setUser(parsedUser);
           setIsAuthenticated(true);
 
         } catch (error) {
-
           console.error(
             'Failed to restore auth state:',
             error
           );
 
-          logout();
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+
+          setToken(null);
+          setUser(null);
+          setIsAuthenticated(false);
         }
       }
 
@@ -64,7 +62,6 @@ export const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
-
   }, []);
 
 
@@ -73,7 +70,6 @@ export const AuthProvider = ({ children }) => {
   // ============================================================
 
   const login = async (credentials) => {
-
     const response =
       await authService.login(credentials);
 
@@ -85,9 +81,21 @@ export const AuthProvider = ({ children }) => {
 
   // ============================================================
   // GOOGLE LOGIN
+  //
+  // Used by BOTH:
+  // - Login page
+  // - Register page
+  //
+  // Backend endpoint:
+  // POST /api/auth/google
   // ============================================================
 
   const googleLogin = async (credential) => {
+    if (!credential) {
+      throw new Error(
+        'Google authentication failed: No credential received.'
+      );
+    }
 
     const response =
       await authService.googleLogin(
@@ -105,7 +113,6 @@ export const AuthProvider = ({ children }) => {
   // ============================================================
 
   const register = async (data) => {
-
     const response =
       await authService.register(data);
 
@@ -118,7 +125,6 @@ export const AuthProvider = ({ children }) => {
   // ============================================================
 
   const verifyEmail = async (data) => {
-
     const response =
       await authService.verifyEmail(data);
 
@@ -131,7 +137,6 @@ export const AuthProvider = ({ children }) => {
   // ============================================================
 
   const resendVerification = async (data) => {
-
     const response =
       await authService.resendVerification(data);
 
@@ -144,7 +149,6 @@ export const AuthProvider = ({ children }) => {
   // ============================================================
 
   const forgotPassword = async (email) => {
-
     const response =
       await authService.forgotPassword(email);
 
@@ -157,7 +161,6 @@ export const AuthProvider = ({ children }) => {
   // ============================================================
 
   const resetPassword = async (data) => {
-
     const response =
       await authService.resetPassword(data);
 
@@ -166,55 +169,135 @@ export const AuthProvider = ({ children }) => {
 
 
   // ============================================================
-  // PROCESS LOGIN RESPONSE
+  // PROCESS LOGIN / GOOGLE LOGIN RESPONSE
+  //
+  // Normalizes different backend response structures.
+  // Always returns:
+  //
+  // {
+  //   token,
+  //   user,
+  //   data
+  // }
   // ============================================================
 
   const processLoginResponse = (responseData) => {
+    /*
+     * Backend may return:
+     *
+     * {
+     *   jwt: "...",
+     *   user: {...}
+     * }
+     *
+     * OR:
+     *
+     * {
+     *   data: {
+     *     jwt: "...",
+     *     user: {...}
+     *   }
+     * }
+     *
+     * OR:
+     *
+     * {
+     *   token: "...",
+     *   user: {...}
+     * }
+     */
 
     const payload =
-      responseData?.data ||
-      responseData ||
-      {};
+      responseData?.data &&
+      typeof responseData.data === 'object'
+        ? responseData.data
+        : responseData || {};
+
+
+    // ----------------------------------------------------------
+    // FIND JWT TOKEN
+    // ----------------------------------------------------------
 
     const jwt =
       payload.jwt ||
       payload.token ||
-      payload.accessToken;
+      payload.accessToken ||
+      responseData?.jwt ||
+      responseData?.token ||
+      responseData?.accessToken;
 
-    const authenticatedUser =
+
+    // ----------------------------------------------------------
+    // FIND USER
+    // ----------------------------------------------------------
+
+    let authenticatedUser =
       payload.user ||
+      responseData?.user ||
+      null;
+
+
+    /*
+     * Some backends return user properties directly
+     * instead of putting them inside "user".
+     */
+
+    if (
+      !authenticatedUser &&
       (
-        payload.email
-          ? {
-              id: payload.id,
-              firstName: payload.firstName,
-              lastName: payload.lastName,
-              email: payload.email,
-              role: payload.role,
-              status: payload.status,
-              emailVerified:
-                payload.emailVerified,
-            }
-          : null
-      );
+        payload.email ||
+        payload.firstName ||
+        payload.lastName
+      )
+    ) {
+      authenticatedUser = {
+        id: payload.id,
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        email: payload.email,
+        role: payload.role,
+        roles: payload.roles,
+        status: payload.status,
+        emailVerified:
+          payload.emailVerified,
+      };
+    }
+
+
+    // ----------------------------------------------------------
+    // TOKEN REQUIRED
+    // ----------------------------------------------------------
 
     if (!jwt) {
+      console.error(
+        'Authentication response did not contain a JWT:',
+        responseData
+      );
 
       throw new Error(
         'Authentication failed: No token received from server.'
       );
     }
 
+
+    // ----------------------------------------------------------
+    // SAVE TOKEN
+    // ----------------------------------------------------------
+
     setToken(jwt);
-    setUser(authenticatedUser);
-    setIsAuthenticated(true);
 
     localStorage.setItem(
       'token',
       jwt
     );
 
+
+    // ----------------------------------------------------------
+    // SAVE USER
+    // ----------------------------------------------------------
+
     if (authenticatedUser) {
+      setUser(authenticatedUser);
 
       localStorage.setItem(
         'user',
@@ -222,7 +305,23 @@ export const AuthProvider = ({ children }) => {
       );
     }
 
-    return responseData;
+
+    // ----------------------------------------------------------
+    // AUTHENTICATED
+    // ----------------------------------------------------------
+
+    setIsAuthenticated(true);
+
+
+    // ----------------------------------------------------------
+    // RETURN PREDICTABLE STRUCTURE
+    // ----------------------------------------------------------
+
+    return {
+      token: jwt,
+      user: authenticatedUser,
+      data: responseData,
+    };
   };
 
 
@@ -231,7 +330,6 @@ export const AuthProvider = ({ children }) => {
   // ============================================================
 
   const logout = () => {
-
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);
@@ -246,9 +344,7 @@ export const AuthProvider = ({ children }) => {
   // ============================================================
 
   const updateUserInfo = (nextUser) => {
-
     setUser((currentUser) => {
-
       const mergedUser = {
         ...(currentUser || {}),
         ...(nextUser || {}),
@@ -269,9 +365,7 @@ export const AuthProvider = ({ children }) => {
   // ============================================================
 
   const refreshUser = async () => {
-
     try {
-
       const response =
         await api.get(
           '/api/auth/me',
@@ -292,7 +386,6 @@ export const AuthProvider = ({ children }) => {
       );
 
     } catch (error) {
-
       console.error(
         'Failed to refresh user:',
         error
@@ -300,6 +393,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+
+  // ============================================================
+  // PROVIDER
+  // ============================================================
 
   return (
     <AuthContext.Provider
