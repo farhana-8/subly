@@ -364,10 +364,20 @@ const Register = () => {
         // ------------------------------------------------------
 
         const user =
-          result?.user;
+          result?.user ||
+          result?.data?.user ||
+          result?.data?.profile ||
+          null;
+
+        const authToken =
+          result?.token ||
+          result?.data?.token ||
+          result?.data?.jwt ||
+          result?.data?.accessToken ||
+          result?.data?.idToken;
 
 
-        if (!result?.token) {
+        if (!authToken) {
 
           throw new Error(
             'Google authentication succeeded, but no application token was received.'

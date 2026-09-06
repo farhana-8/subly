@@ -10,11 +10,18 @@ const authService = {
   },
 
   googleLogin: async (credential) => {
+    const payload =
+      typeof credential === 'string'
+        ? {
+            credential,
+            idToken: credential,
+            token: credential,
+          }
+        : credential;
+
     return api.post(
       '/api/auth/google',
-      {
-        credential,
-      }
+      payload
     );
   },
 

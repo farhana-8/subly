@@ -183,14 +183,17 @@ export const AuthProvider = ({ children }) => {
 
   const processLoginResponse = (responseData) => {
     /*
-     * Backend may return:
+     * Backend may return a few common variants:
      *
      * {
      *   jwt: "...",
      *   user: {...}
      * }
      *
-     * OR:
+     * {
+     *   token: "...",
+     *   user: {...}
+     * }
      *
      * {
      *   data: {
@@ -199,20 +202,29 @@ export const AuthProvider = ({ children }) => {
      *   }
      * }
      *
-     * OR:
-     *
      * {
-     *   token: "...",
-     *   user: {...}
+     *   data: {
+     *     accessToken: "...",
+     *     profile: {...}
+     *   }
      * }
      */
 
-    const payload =
-      responseData?.data &&
-      typeof responseData.data === 'object'
-        ? responseData.data
-        : responseData || {};
+    let payload =
+      responseData &&
+      typeof responseData === 'object'
+        ? { ...responseData }
+        : {};
 
+    if (
+      payload.data &&
+      typeof payload.data === 'object'
+    ) {
+      payload = {
+        ...payload,
+        ...payload.data,
+      };
+    }
 
     // ----------------------------------------------------------
     // FIND JWT TOKEN
@@ -222,9 +234,15 @@ export const AuthProvider = ({ children }) => {
       payload.jwt ||
       payload.token ||
       payload.accessToken ||
+      payload.idToken ||
       responseData?.jwt ||
       responseData?.token ||
-      responseData?.accessToken;
+      responseData?.accessToken ||
+      responseData?.idToken ||
+      responseData?.data?.jwt ||
+      responseData?.data?.token ||
+      responseData?.data?.accessToken ||
+      responseData?.data?.idToken;
 
 
     // ----------------------------------------------------------
@@ -233,7 +251,14 @@ export const AuthProvider = ({ children }) => {
 
     let authenticatedUser =
       payload.user ||
+      payload.profile ||
+      payload.account ||
       responseData?.user ||
+      responseData?.profile ||
+      responseData?.account ||
+      responseData?.data?.user ||
+      responseData?.data?.profile ||
+      responseData?.data?.account ||
       null;
 
 
@@ -247,13 +272,20 @@ export const AuthProvider = ({ children }) => {
       (
         payload.email ||
         payload.firstName ||
-        payload.lastName
+        payload.lastName ||
+        payload.name
       )
     ) {
       authenticatedUser = {
         id: payload.id,
-        firstName: payload.firstName,
-        lastName: payload.lastName,
+        firstName:
+          payload.firstName ||
+          payload.givenName ||
+          payload.first_name,
+        lastName:
+          payload.lastName ||
+          payload.familyName ||
+          payload.last_name,
         email: payload.email,
         role: payload.role,
         roles: payload.roles,
