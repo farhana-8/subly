@@ -41,7 +41,19 @@ const ResetPassword = () => {
   }
 
   if (password.length < 8) {
-    setError('Your password must be at least 8 characters long.');
+    setError('Password must be at least 8 characters long.');
+    return;
+  }
+
+  // Must contain at least one letter, one number, and one special character
+  const hasLetter = /[A-Za-z]/.test(password);
+  const hasNumber = /\d/.test(password);
+  const hasSpecialCharacter = /[^A-Za-z0-9]/.test(password);
+
+  if (!hasLetter || !hasNumber || !hasSpecialCharacter) {
+    setError(
+      'Password must contain at least one letter, one number, and one special character.'
+    );
     return;
   }
 
@@ -51,7 +63,9 @@ const ResetPassword = () => {
   }
 
   if (password !== confirmPassword) {
-    setError('The passwords do not match. Please enter the same password in both fields.');
+    setError(
+      'The passwords do not match. Please enter the same password in both fields.'
+    );
     return;
   }
 
