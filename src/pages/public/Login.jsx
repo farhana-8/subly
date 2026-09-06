@@ -1,6 +1,4 @@
-import React, {
-  useState,
-} from 'react';
+import React, { useState } from 'react';
 
 import {
   Link,
@@ -8,9 +6,7 @@ import {
   useLocation,
 } from 'react-router-dom';
 
-import {
-  motion,
-} from 'framer-motion';
+import { motion } from 'framer-motion';
 
 import {
   Layout,
@@ -22,26 +18,19 @@ import {
   EyeOff,
 } from 'lucide-react';
 
-import {
-  GoogleLogin,
-} from '@react-oauth/google';
+import { GoogleLogin } from '@react-oauth/google';
 
 import useAuth from '../../hooks/useAuth';
 
 
 const Login = () => {
-
-  const [email, setEmail] =
-    useState('');
-
-  const [password, setPassword] =
-    useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const [showPassword, setShowPassword] =
     useState(false);
 
-  const [error, setError] =
-    useState('');
+  const [error, setError] = useState('');
 
   const [loading, setLoading] =
     useState(false);
@@ -49,23 +38,113 @@ const Login = () => {
   const [googleLoading, setGoogleLoading] =
     useState(false);
 
-
   const {
     login,
     googleLogin,
     logout,
   } = useAuth();
 
-
-  const navigate =
-    useNavigate();
-
-  const location =
-    useLocation();
-
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const isAdminEntry =
     location.pathname === '/admin/login';
+
+
+  // ============================================================
+  // GET FRIENDLY ERROR MESSAGE
+  // ============================================================
+
+  const getLoginErrorMessage = (err) => {
+    const status = err?.response?.status;
+
+    const serverData =
+      err?.response?.data;
+
+    // Backend message
+    const serverMessage =
+      serverData?.message ||
+      serverData?.error ||
+      serverData?.errorMessage;
+
+    // ----------------------------------------------------------
+    // 401 = wrong credentials
+    // ----------------------------------------------------------
+
+    if (status === 401) {
+      return (
+        serverMessage ||
+        'Invalid email or password. Please check your credentials and try again.'
+      );
+    }
+
+    // ----------------------------------------------------------
+    // 403 = account access problem
+    // ----------------------------------------------------------
+
+    if (status === 403) {
+      return (
+        serverMessage ||
+        'You do not have permission to sign in with this account.'
+      );
+    }
+
+    // ----------------------------------------------------------
+    // 400 = invalid request
+    // ----------------------------------------------------------
+
+    if (status === 400) {
+      return (
+        serverMessage ||
+        'Please check your email and password and try again.'
+      );
+    }
+
+    // ----------------------------------------------------------
+    // 429 = too many requests
+    // ----------------------------------------------------------
+
+    if (status === 429) {
+      return (
+        serverMessage ||
+        'Too many login attempts. Please wait a moment and try again.'
+      );
+    }
+
+    // ----------------------------------------------------------
+    // 500 / 502 / 503 / 504
+    // ----------------------------------------------------------
+
+    if (status >= 500) {
+      return (
+        serverMessage ||
+        'The server is temporarily unavailable. Please try again in a moment.'
+      );
+    }
+
+    // ----------------------------------------------------------
+    // Network error
+    // ----------------------------------------------------------
+
+    if (
+      err?.code === 'ERR_NETWORK' ||
+      !err?.response
+    ) {
+      return (
+        'Unable to connect to the server. Please check your internet connection and try again.'
+      );
+    }
+
+    // ----------------------------------------------------------
+    // Generic fallback
+    // ----------------------------------------------------------
+
+    return (
+      serverMessage ||
+      err?.message ||
+      'Unable to sign in. Please try again.'
+    );
+  };
 
 
   // ============================================================
@@ -73,83 +152,97 @@ const Login = () => {
   // ============================================================
 
   const handleSubmit = async (e) => {
-
     e.preventDefault();
 
     setError('');
 
+    const trimmedEmail =
+      email.trim().toLowerCase();
+
+    if (!trimmedEmail) {
+      setError('Please enter your email address.');
+      return;
+    }
+
+    if (!password) {
+      setError('Please enter your password.');
+      return;
+    }
+
     setLoading(true);
 
     try {
+      const data = await login({
+        email: trimmedEmail,
+        password,
+      });
 
-      const data =
-        await login({
-          email,
-          password,
-        });
-
+      // --------------------------------------------------------
+      // AuthContext now returns a predictable structure:
+      // { token, user, data, raw }
+      // --------------------------------------------------------
 
       const user =
         data?.user ||
-        data?.data?.user ||
         data?.data ||
-        data;
-
+        null;
 
       const isAdmin =
         user?.role === 'ADMIN' ||
         user?.roles?.includes('ADMIN');
 
+      // --------------------------------------------------------
+      // Admin login protection
+      // --------------------------------------------------------
 
       if (
         isAdminEntry &&
         !isAdmin
       ) {
-
         logout();
 
-        throw new Error(
+        setError(
           'This account does not have admin access.'
         );
+
+        return;
       }
 
+      // --------------------------------------------------------
+      // Determine destination
+      // --------------------------------------------------------
 
       let target =
         isAdminEntry
           ? '/admin/dashboard'
           : location.state?.from?.pathname;
 
-
       if (
         !target ||
         target === '/' ||
         target.startsWith('/admin')
       ) {
-
         target =
           isAdmin
             ? '/admin/dashboard'
             : '/dashboard';
       }
 
-
-      navigate(
-        target,
-        {
-          replace: true,
-        }
-      );
+      navigate(target, {
+        replace: true,
+      });
 
     } catch (err) {
+      console.error(
+        'Login failed:',
+        err
+      );
 
       setError(
-        err.response?.data?.message ||
-        err.message ||
-        'Invalid email or password. Please try again.'
+        getLoginErrorMessage(err)
       );
 
     } finally {
-
       setLoading(false);
     }
   };
@@ -163,94 +256,83 @@ const Login = () => {
     async (credentialResponse) => {
 
       setError('');
-
       setGoogleLoading(true);
 
       try {
-
         if (
           !credentialResponse?.credential
         ) {
-
           throw new Error(
-            'Google authentication failed. No credential received.'
+            'Google authentication failed. No credential was received.'
           );
         }
-
 
         const data =
           await googleLogin(
             credentialResponse.credential
           );
 
-
-        const payload =
-          data?.data ||
-          data ||
-          {};
-
-
         const loggedInUser =
-          payload?.user ||
-          payload;
-
+          data?.user ||
+          data?.data ||
+          null;
 
         const isAdmin =
           loggedInUser?.role === 'ADMIN' ||
-          loggedInUser?.roles?.includes(
-            'ADMIN'
-          );
+          loggedInUser?.roles?.includes('ADMIN');
 
+        // ------------------------------------------------------
+        // Admin access check
+        // ------------------------------------------------------
 
         if (
           isAdminEntry &&
           !isAdmin
         ) {
-
           logout();
 
-          throw new Error(
+          setError(
             'This account does not have admin access.'
           );
+
+          return;
         }
 
+        // ------------------------------------------------------
+        // Destination
+        // ------------------------------------------------------
 
         let target =
           isAdminEntry
             ? '/admin/dashboard'
             : location.state?.from?.pathname;
 
-
         if (
           !target ||
           target === '/' ||
           target.startsWith('/admin')
         ) {
-
           target =
             isAdmin
               ? '/admin/dashboard'
               : '/dashboard';
         }
 
-
-        navigate(
-          target,
-          {
-            replace: true,
-          }
-        );
+        navigate(target, {
+          replace: true,
+        });
 
       } catch (err) {
+        console.error(
+          'Google login failed:',
+          err
+        );
 
         setError(
-          err.response?.data?.message ||
-          err.message ||
-          'Google sign-in failed. Please try again.'
+          getLoginErrorMessage(err)
         );
 
       } finally {
-
         setGoogleLoading(false);
       }
     };
@@ -261,7 +343,6 @@ const Login = () => {
   // ============================================================
 
   const handleGoogleError = () => {
-
     setGoogleLoading(false);
 
     setError(
@@ -270,8 +351,11 @@ const Login = () => {
   };
 
 
-  return (
+  // ============================================================
+  // UI
+  // ============================================================
 
+  return (
     <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-4 bg-bg-deep relative overflow-hidden transition-colors duration-300">
 
       {/* BACKGROUND GLOW */}
@@ -343,18 +427,18 @@ const Login = () => {
             <motion.div
               initial={{
                 opacity: 0,
-                scale: 0.95,
+                y: -5,
               }}
               animate={{
                 opacity: 1,
-                scale: 1,
+                y: 0,
               }}
               className="mb-5 bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-2xl flex items-start gap-3 text-sm"
             >
 
-              <AlertCircle className="h-5 w-5 flex-shrink-0" />
+              <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
 
-              <span>
+              <span className="leading-relaxed">
                 {error}
               </span>
 
@@ -448,11 +532,13 @@ const Login = () => {
                   type="email"
                   required
                   value={email}
-                  onChange={(e) =>
-                    setEmail(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+
+                    if (error) {
+                      setError('');
+                    }
+                  }}
                   className="w-full bg-bg-deep border border-main rounded-2xl py-4 pl-12 pr-4 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-violet/50 focus:border-primary-violet transition-all"
                   placeholder="name@company.com"
                 />
@@ -495,11 +581,13 @@ const Login = () => {
                   }
                   required
                   value={password}
-                  onChange={(e) =>
-                    setPassword(
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+
+                    if (error) {
+                      setError('');
+                    }
+                  }}
                   className="w-full bg-bg-deep border border-main rounded-2xl py-4 pl-12 pr-12 text-main placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-violet/50 focus:border-primary-violet transition-all"
                   placeholder="••••••••"
                 />
@@ -509,10 +597,15 @@ const Login = () => {
                   type="button"
                   onClick={() =>
                     setShowPassword(
-                      !showPassword
+                      (current) => !current
                     )
                   }
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-main transition-colors focus:outline-none"
+                  aria-label={
+                    showPassword
+                      ? 'Hide password'
+                      : 'Show password'
+                  }
                 >
 
                   {showPassword
@@ -615,9 +708,7 @@ const Login = () => {
       </motion.div>
 
     </div>
-
   );
 };
-
 
 export default Login;
