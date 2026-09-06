@@ -27,37 +27,55 @@ const ResetPassword = () => {
   }, [isSuccess, navigate]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+  e.preventDefault();
+  setError('');
 
-    if (!token) {
-      setError('Reset token is missing.');
-      return;
-    }
+  if (!token) {
+    setError('Reset token is missing.');
+    return;
+  }
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
+  if (!password) {
+    setError('Please enter a new password.');
+    return;
+  }
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters long.');
-      return;
-    }
+  if (password.length < 8) {
+    setError('Your password must be at least 8 characters long.');
+    return;
+  }
 
-    setLoading(true);
+  if (!confirmPassword) {
+    setError('Please confirm your new password.');
+    return;
+  }
 
-    try {
-      await authService.resetPassword({ token, newPassword: password });
-      setIsSuccess(true);
-      addToast('Password reset successfully!', 'success');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to reset password. The link may be invalid or expired.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (password !== confirmPassword) {
+    setError('The passwords do not match. Please enter the same password in both fields.');
+    return;
+  }
 
+  setLoading(true);
+
+  try {
+    await authService.resetPassword({
+      token,
+      newPassword: password
+    });
+
+    setIsSuccess(true);
+    addToast('Password reset successfully!', 'success');
+  } catch (err) {
+    const backendMessage = err.response?.data?.message;
+
+    setError(
+      backendMessage ||
+      'Unable to reset your password. The reset link may be invalid or expired.'
+    );
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-4 bg-bg-deep relative overflow-hidden transition-colors duration-300">
       {/* Background glow */}
