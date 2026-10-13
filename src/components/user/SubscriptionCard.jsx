@@ -242,7 +242,7 @@ const SubscriptionCard = ({
             <button
               onClick={() => onAction('resume', id)}
               disabled={actionLoading}
-              className="px-6 py-2.5 bg-accent-lime text-white rounded-xl font-bold hover:bg-emerald-600 transition-all flex items-center gap-2 disabled:opacity-50"
+              className="px-6 py-2.5 bg-accent-lime text-white rounded-xl font-bold hover:bg-primary-purple transition-all flex items-center gap-2 disabled:opacity-50"
             >
               <Play className="h-4 w-4" />
               Resume

@@ -78,7 +78,7 @@ const AdminDashboard = () => {
       name: 'Total Revenue', 
       value: displayRevenue, 
       icon: CreditCard, 
-      color: 'from-accent-lime to-emerald-500'
+      color: 'from-accent-lime to-accent-orange'
     },
     { 
       name: 'Total Payments', 

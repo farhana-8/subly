@@ -154,7 +154,7 @@ const Plans = () => {
           email: user?.email || '',
         },
         theme: {
-          color: '#8B5CF6',
+          color: '#B85F3F',
         },
         modal: {
           ondismiss: () => {

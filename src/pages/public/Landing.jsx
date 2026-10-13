@@ -88,7 +88,7 @@ const DashboardPreview = () => {
                     initial={{ width: 0 }}
                     animate={{ width: '70%' }}
                     transition={{ delay: 1 + (i * 0.2), duration: 1 }}
-                    className={`h-full bg-gradient-to-r ${i === 0 ? 'from-accent-lime to-emerald-500' : i === 1 ? 'from-primary-violet to-primary-purple' : 'from-accent-orange to-accent-coral'}`}
+                    className={`h-full bg-gradient-to-r ${i === 0 ? 'from-accent-lime to-accent-orange' : i === 1 ? 'from-primary-violet to-primary-purple' : 'from-accent-orange to-accent-coral'}`}
                   ></motion.div>
                 </div>
               </div>
@@ -200,7 +200,7 @@ const Landing = () => {
       name: 'Real-time Notifications', 
       desc: 'Keep users informed with automated email updates.',
       icon: Bell,
-      color: 'from-accent-lime to-emerald-500'
+      color: 'from-accent-lime to-accent-orange'
     },
     { 
       name: 'Admin Analytics', 
